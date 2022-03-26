@@ -43,8 +43,19 @@ GLuint vao[2] = { -1, -1 };
 GLuint vbo[2] = { -1, -1 };
 const int num_particles = 10000;
 GLuint tfo[2] = { -1, -1 }; //transform feedback objects
+
 //Nmaes of the VS out variables that should be captured by transform feedback
-const char* xform_feedback_varyings[] = { "pos_out", "vel_out", "age_out" };
+const char* xform_feedback_varyings[] = { "pos_out", "vel_out", "for_out", "rho_out", "pres_out", "age_out" };
+
+namespace AttribLocs // Indices of varying variables in the xform feedback
+{
+    int pos = 0;
+    int vel = 1;
+    int force = 2;
+    int rho = 3;
+    int pres = 4;
+    int age = 5;
+}
 
 //These indices get swapped every frame to perform the ping-ponging
 int read_index = 0;  //initially read from VBO_ID[0]
@@ -71,13 +82,6 @@ namespace UniformLocs
 {
     int M = 0; //model matrix
     int time = 1;
-}
-
-namespace AttribLocs
-{
-    int pos = 0;
-    int vel = 1;
-    int age = 2;
 }
 
 //For an explanation of this program's structure see https://www.glfw.org/docs/3.3/quick.html 
@@ -173,10 +177,16 @@ void display(GLFWwindow* window)
         //your system does not support transform feedback objects you can uncomment the following lines.
         const GLint pos_varying = 0;
         const GLint vel_varying = 1;
-        const GLint age_varying = 2;
+        const GLint for_varying = 2;
+        const GLint rho_varying = 3;
+        const GLint pres_varying = 4;
+        const GLint age_varying = 5;
 
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pos_varying, vbo[write_index]);
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, vel_varying, vbo[write_index]);
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, for_varying, vbo[write_index]);
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, rho_varying, vbo[write_index]);
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pres_varying, vbo[write_index]);
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, age_varying, vbo[write_index]);
     }
 
@@ -336,23 +346,35 @@ void initOpenGL()
     glGenTransformFeedbacks(2, tfo);
 
     //all attribs are initially zero
-    std::vector<float> zeros(7 * num_particles, 0.0f); //particle positions, velocities, ages
+    std::vector<float> zeros(12 * num_particles, 0.0f); //particle positions, velocities, forces, densities, pressures, ages
 
-    //These are the indices in the array passed to glTransformFeedbackVaryings (const char *vars[] = { "pos_out", "vel_out", "age_out" };)
+    //These are the indices in the array passed to glTransformFeedbackVaryings
+    // (const char *xform_feedback_varyings[] = { "pos_out", "vel_out", "for_out", "rho_out", "pres_out", "age_out" };)
     const GLint pos_varying = 0;
     const GLint vel_varying = 1;
-    const GLint age_varying = 2;
+    const GLint for_varying = 2;
+    const GLint rho_varying = 3;
+    const GLint pres_varying = 4;
+    const GLint age_varying = 5;
 
     //create VAOs and VBOs
     glGenVertexArrays(2, vao);
     glGenBuffers(2, vbo);
 
-    const int stride = 7 * sizeof(float);
+    const int stride = 12 * sizeof(float);
+
     const int pos_offset = 0;
     const int vel_offset = sizeof(glm::vec3);
-    const int age_offset = 2 * sizeof(glm::vec3);
+    const int for_offset = 2 * sizeof(glm::vec3);
+    const int rho_offset = 3 * sizeof(glm::vec3);
+    const int pres_offset = 3 * sizeof(glm::vec3) + sizeof(float);
+    const int age_offset = 3 * sizeof(glm::vec3) + 2 * sizeof(float);
+
     const int pos_size = num_particles * sizeof(glm::vec3);
     const int vel_size = num_particles * sizeof(glm::vec3);
+    const int for_size = num_particles * sizeof(glm::vec3);;
+    const int rho_size = num_particles * sizeof(float);
+    const int pres_size = num_particles * sizeof(float);
     const int age_size = num_particles * sizeof(float);
 
     for (int i = 0; i < 2; i++)
@@ -368,6 +390,15 @@ void initOpenGL()
         glEnableVertexAttribArray(AttribLocs::vel);
         glVertexAttribPointer(AttribLocs::vel, 3, GL_FLOAT, false, stride, BUFFER_OFFSET(vel_offset));
 
+        glEnableVertexAttribArray(AttribLocs::force);
+        glVertexAttribPointer(AttribLocs::force, 3, GL_FLOAT, false, stride, BUFFER_OFFSET(for_offset));
+
+        glEnableVertexAttribArray(AttribLocs::rho);
+        glVertexAttribPointer(AttribLocs::rho, 1, GL_FLOAT, false, stride, BUFFER_OFFSET(rho_offset));
+
+        glEnableVertexAttribArray(AttribLocs::pres);
+        glVertexAttribPointer(AttribLocs::pres, 1, GL_FLOAT, false, stride, BUFFER_OFFSET(pres_offset));
+
         glEnableVertexAttribArray(AttribLocs::age);
         glVertexAttribPointer(AttribLocs::age, 1, GL_FLOAT, false, stride, BUFFER_OFFSET(age_offset));
 
@@ -378,6 +409,9 @@ void initOpenGL()
         //Specify VBO to write into
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pos_varying, vbo[i]);
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, vel_varying, vbo[i]);
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, for_varying, vbo[i]);
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, rho_varying, vbo[i]);
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pres_varying, vbo[i]);
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, age_varying, vbo[i]);
 
         glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);

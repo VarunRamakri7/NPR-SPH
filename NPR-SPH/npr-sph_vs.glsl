@@ -8,24 +8,35 @@ layout(std140, binding = 0) uniform SceneUniforms
    vec4 eye_w;	//world-space eye position
 };
 
+/*layout(std140, binding = 1) uniform SPHParticleUniforms
+{
+    vec3 position;
+    vec3 velocity;
+    vec3 force;
+    float density;
+    float pressure;
+	float age;
+};*/
+
 layout(location = 0) in vec3 pos_attrib;
 layout(location = 1) in vec3 vel_attrib;
-layout(location = 2) in float age_attrib;
+layout(location = 2) in vec3 force;
+layout(location = 3) in float rho;
+layout(location = 4) in float pressure;
+layout(location = 5) in float age_attrib;
 
 //write into the first bound tfo
 layout(xfb_buffer = 0) out;
 
-//interleave attrib order was pos, vel, age
-//3 floats + 3 floats + 1 float = 7 floats -> stride = 7*sizeof(float) = 28 bytes
+//interleave attrib order was pos, vel, force, rho, pressure, age
+//3 floats + 3 floats + 3 floats + 1 float + 1 float + 1 float = 12 floats -> stride = 12*sizeof(float) = 48 bytes
 
-//pos offset = 0 bytes
-layout(xfb_offset = 0, xfb_stride = 28) out vec3 pos_out; 
-
-//vel offset = 3*sizeof(float) = 12 bytes
-layout(xfb_offset = 12, xfb_stride = 28) out vec3 vel_out; 
-
-//age offset = 6*sizeof(float) = 24 bytes
-layout(xfb_offset = 24, xfb_stride = 28) out float age_out;
+layout(xfb_offset = 0, xfb_stride = 48) out vec3 pos_out; 
+layout(xfb_offset = 12, xfb_stride = 48) out vec3 vel_out;
+layout(xfb_offset = 24, xfb_stride = 48) out vec3 for_out;
+layout(xfb_offset = 36, xfb_stride = 48) out float rho_out;
+layout(xfb_offset = 40, xfb_stride = 48) out float pres_out;
+layout(xfb_offset = 44, xfb_stride = 48) out float age_out;
 
 //Basic velocity field
 vec3 v0(vec3 p);
@@ -43,6 +54,10 @@ void main(void)
 	vel_out = v0(pos_attrib);
 	pos_out = pos_attrib + 0.003*vel_out.xyz;
 	age_out = age_attrib - 1.0;
+
+	for_out = vec3(0.0f);
+	rho_out = 0.0f;
+	pres_out = 0.0f;
 
 	//Reinitialize particles as needed
 	if(age_out <= 0.0 || length(pos_out) > 2.0f)

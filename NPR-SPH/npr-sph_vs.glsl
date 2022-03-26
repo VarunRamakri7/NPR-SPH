@@ -20,9 +20,9 @@ layout(std140, binding = 0) uniform SceneUniforms
 
 layout(location = 0) in vec3 pos_attrib;
 layout(location = 1) in vec3 vel_attrib;
-layout(location = 2) in vec3 force;
-layout(location = 3) in float rho;
-layout(location = 4) in float pressure;
+layout(location = 2) in vec3 for_attrib;
+layout(location = 3) in float rho_attrib;
+layout(location = 4) in float pres_attrib;
 layout(location = 5) in float age_attrib;
 
 //write into the first bound tfo

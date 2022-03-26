@@ -10,4 +10,3 @@ void main(void)
 {   
    fragcolor = particle_color_rgb;
 }
-

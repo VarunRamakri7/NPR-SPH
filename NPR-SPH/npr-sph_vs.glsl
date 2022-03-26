@@ -8,16 +8,6 @@ layout(std140, binding = 0) uniform SceneUniforms
    vec4 eye_w;	//world-space eye position
 };
 
-/*layout(std140, binding = 1) uniform SPHParticleUniforms
-{
-    vec3 position;
-    vec3 velocity;
-    vec3 force;
-    float density;
-    float pressure;
-	float age;
-};*/
-
 layout(location = 0) in vec3 pos_attrib;
 layout(location = 1) in vec3 vel_attrib;
 layout(location = 2) in vec3 for_attrib;

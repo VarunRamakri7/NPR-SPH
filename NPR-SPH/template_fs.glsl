@@ -40,5 +40,24 @@ void main(void)
     vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	//world-space unit view vector
     vec3 hw = normalize(lw + vw); // Halfway vector
 
-    fragcolor = ka*La + kd*Ld*max(0.0f, dot(nw, lw)) + ks*Ls;
+    // reflect
+    vec3 r = normalize(reflect(lw, nw));
+    float specular =dot(nw, lw);
+    float diffuse = max(dot(-lw, nw), 0.0);
+
+    float intensity = 0.6 * diffuse + 0.4 * specular;
+
+    // cell shading 
+    if (specular >= 0) { 
+        // darkest
+        fragcolor =ka * 0.5;
+    } else if (specular < 0) {
+        // midtones
+        fragcolor = ka * 0.7;
+    } 
+    if (dot(r, vw) > 0.95) {
+        // highlights
+        fragcolor = La * ka * 1.5;
+    }
+
 }

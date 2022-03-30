@@ -34,7 +34,7 @@ static const std::string fragment_shader("npr-sph_fs.glsl");
 GLuint shader_program = -1;
 
 float angle = 0.0f;
-float scale = 0.2f;
+float scale = 0.4f;
 float aspect = 1.0f;
 bool recording = false;
 

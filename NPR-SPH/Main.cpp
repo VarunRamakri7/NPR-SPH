@@ -344,7 +344,7 @@ std::vector<float> make_cube()
 
         // Push forces
         buffer.push_back(0.0f);
-        buffer.push_back(1.0f);
+        buffer.push_back(-9.81f); // Gravity along Y-Axis
         buffer.push_back(0.0f);
 
         // Push pressue

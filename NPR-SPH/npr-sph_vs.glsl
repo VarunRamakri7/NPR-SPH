@@ -31,7 +31,8 @@ layout(xfb_offset = 44, xfb_stride = 48) out float age_out;
 vec3 v0(vec3 p); //Basic velocity field
 float rand(vec2 co); // pseudorandom number
 
-const float fraction = 0.01f;
+const float dt = 0.01f;
+const float drag = 0.85f;
 
 void main(void)
 {
@@ -40,27 +41,22 @@ void main(void)
 	gl_PointSize = 4.0;
 
 	//Compute particle attributes for next frame
-	vel_out = v0(pos_attrib);
-	pos_out = pos_attrib + vel_out * time * fraction;
+	vel_out = v0(pos_attrib) * drag; // Calculate gravity and drag
+	pos_out = pos_attrib + vel_out * time * dt;
 	age_out = age_attrib - 1.0;
 
-	//Reinitialize particles as needed
+	// Reset particles if they go far enough
 	if(length(pos_attrib) > 100.0f)
 	{
-		vec2 seed = vec2(float(gl_VertexID), time * fraction); //seed for the random number generator
+		///vec2 seed = vec2(float(gl_VertexID), time * dt); //seed for the random number generator
 		//age_out = 500.0 + 200.0*rand(seed);
-		
-		vel_out *= 0.85f; // Add drag
-		age_out = 10.0f; // Reset age
-
-		pos_out = pos_attrib + vel_out * time * fraction;
-		pos_out.y = 0.0f;
+		pos_out.y += 50.0f; // Reset y coordinate
 	}
 }
 
 vec3 v0(vec3 p)
 {
-	return vec3(0.0f, for_attrib.y * time * fraction + p.y, 0.0f);
+	return vec3(0.0f, for_attrib.y * time * dt + p.y, 0.0f);
 	//return vec3(sin(-p.y*10.0+time/7.0-10.0), sin(-p.x*10.0+1.2*time+10.0), sin(+7.0*p.x -5.0*p.y + time));
 }
 

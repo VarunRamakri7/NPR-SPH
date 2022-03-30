@@ -31,6 +31,9 @@ const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 static const std::string vertex_shader("npr-sph_vs.glsl");
 static const std::string fragment_shader("npr-sph_fs.glsl");
+static const std::string force_comp_shader("force_comp.glsl");
+static const std::string integrate_comp_shader("integrate_comp.glsl");
+static const std::string rho_pres_com_shader("rho_pres_comp.glsl");
 GLuint shader_program = -1;
 
 float angle = 0.0f;
@@ -475,8 +478,6 @@ void initOpenGL()
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
-
-
 
 //C++ programs start executing in the main() function.
 int main(int argc, char** argv)

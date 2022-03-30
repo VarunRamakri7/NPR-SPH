@@ -34,7 +34,7 @@ static const std::string fragment_shader("npr-sph_fs.glsl");
 GLuint shader_program = -1;
 
 float angle = 0.0f;
-float scale = 1.0f;
+float scale = 0.2f;
 float aspect = 1.0f;
 bool recording = false;
 
@@ -128,7 +128,7 @@ void draw_gui(GLFWwindow* window)
     }
 
     ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
-    ImGui::SliderFloat("Scale", &scale, -10.0f, +10.0f);
+    ImGui::SliderFloat("Scale", &scale, 0.0001f, 2.0f);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
@@ -147,9 +147,9 @@ void display(GLFWwindow* window)
     //Clear the screen to the color previously specified in the glClearColor(...) call.
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    SceneData.eye_w = glm::vec4(0.0f, 0.0f, 3.0f, 1.0f);
-    glm::mat4 M = glm::rotate(angle, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(scale));
-    glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    SceneData.eye_w = glm::vec4(0.0f, -50.0f, -55.0f, 1.0f);
+    glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(scale));
+    glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 P = glm::perspective(glm::pi<float>() / 4.0f, 1.0f, 0.1f, 100.0f);
     SceneData.PV = P * V;
 
@@ -314,6 +314,52 @@ void resize(GLFWwindow* window, int width, int height)
     aspect = float(width) / float(height);
 }
 
+std::vector<float> make_cube()
+{
+    std::vector<glm::vec3> positions;
+    float spacing = -50.0f;
+    for (int i = 0; i < 12 * 100; i++)
+    {
+        for (int j = 0; j < 10; j++)
+        {
+            for (int k = 0; k < 10; k++)
+            {
+                positions.push_back(glm::vec3((float)i + spacing, (float)j + spacing, (float)k + spacing));
+            }
+        }
+    }
+
+    std::vector<float> buffer;
+    for (int i = 0; i < 12 * num_particles; i++)
+    {
+        // Push position
+        buffer.push_back(positions[i].x);
+        buffer.push_back(positions[i].y);
+        buffer.push_back(positions[i].z);
+
+        // Push velocity
+        buffer.push_back(0.0f);
+        buffer.push_back(1.0f);
+        buffer.push_back(0.0f);
+
+        // Push forces
+        buffer.push_back(0.0f);
+        buffer.push_back(1.0f);
+        buffer.push_back(0.0f);
+
+        // Push pressue
+        buffer.push_back(1.0f);
+
+        // Push density
+        buffer.push_back(1.0f);
+
+        // Push age
+        buffer.push_back(10.0f);
+    }
+
+    return buffer;
+}
+
 #define BUFFER_OFFSET( offset )   ((GLvoid*) (offset))
 
 //Initialize OpenGL state. This function only gets called once.
@@ -346,7 +392,7 @@ void initOpenGL()
     glGenTransformFeedbacks(2, tfo);
 
     //all attribs are initially zero
-    std::vector<float> zeros(12 * num_particles, 0.0f); //particle positions, velocities, forces, densities, pressures, ages
+    std::vector<float> zeros = make_cube(); //particle positions, velocities, forces, densities, pressures, ages
 
     //These are the indices in the array passed to glTransformFeedbackVaryings
     // (const char *xform_feedback_varyings[] = { "pos_out", "vel_out", "for_out", "rho_out", "pres_out", "age_out" };)

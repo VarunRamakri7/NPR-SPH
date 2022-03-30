@@ -37,31 +37,30 @@ float rand(vec2 co);
 void main(void)
 {
 	//Draw current particles from vbo
-	gl_Position = PV*M*vec4(pos_attrib, 1.0);
-	gl_PointSize = 6.0;
+	gl_Position = PV*M*vec4(pos_attrib, 1.0f);
+	gl_PointSize = 4.0;
 
 	//Compute particle attributes for next frame
 	vel_out = v0(pos_attrib);
-	pos_out = pos_attrib + 0.003*vel_out.xyz;
+	pos_out = pos_attrib + vel_out * time * 0.001f;
 	age_out = age_attrib - 1.0;
 
-	for_out = vec3(0.0f);
-	rho_out = 0.0f;
-	pres_out = 0.0f;
-
 	//Reinitialize particles as needed
-	if(age_out <= 0.0 || length(pos_out) > 2.0f)
+	if(length(pos_attrib) > 100.0f)
 	{
-		vec2 seed = vec2(float(gl_VertexID), time/10.0); //seed for the random number generator
-		age_out = 500.0 + 200.0*rand(seed);
-		//Pseudorandom position
-		pos_out = 0.5*vec3(rand(seed.xx), rand(seed.yy), 0.1*rand(seed.xy));
+		vec2 seed = vec2(float(gl_VertexID), time * 0.001f); //seed for the random number generator
+		//age_out = 500.0 + 200.0*rand(seed);
+		age_out = 10.0f;
+
+		pos_out = pos_attrib;
+		pos_out.y = 0.0f;
 	}
 }
 
 vec3 v0(vec3 p)
 {
-	return vec3(sin(-p.y*10.0+time/7.0-10.0), sin(-p.x*10.0+1.2*time+10.0), sin(+7.0*p.x -5.0*p.y + time));
+	return vec3(0.0f, -9.8f * time * 0.001f + p.y, 0.0f);
+	//return vec3(sin(-p.y*10.0+time/7.0-10.0), sin(-p.x*10.0+1.2*time+10.0), sin(+7.0*p.x -5.0*p.y + time));
 }
 
 float rand(vec2 co)

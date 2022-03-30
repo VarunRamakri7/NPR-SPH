@@ -25,6 +25,12 @@
 #include "DebugCallback.h"
 #include "UniformGui.h"
 
+#define SPH_NUM_PARTICLES 10000
+#define SPH_PARTICLE_RADIUS 0.005f
+#define SPH_WORK_GROUP_SIZE 128
+// work group count is the ceiling of particle count divided by work group size
+#define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE)
+
 const int init_window_width = 1024;
 const int init_window_height = 1024;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
@@ -34,7 +40,11 @@ static const std::string fragment_shader("npr-sph_fs.glsl");
 static const std::string force_comp_shader("force_comp.glsl");
 static const std::string integrate_comp_shader("integrate_comp.glsl");
 static const std::string rho_pres_com_shader("rho_pres_comp.glsl");
+
 GLuint shader_program = -1;
+GLuint particle_position_vao_handle = -1;
+GLuint compute_program_handle[3]{ -1, -1, -1 };
+GLuint packed_particles_buffer_handle = -1;
 
 float angle = 0.0f;
 float scale = 0.4f;
@@ -42,13 +52,14 @@ float aspect = 1.0f;
 bool recording = false;
 
 //Ping-pong pairs of objects and buffers since we don't have simultaneous read/write access to VBOs.
-GLuint vao[2] = { -1, -1 };
-GLuint vbo[2] = { -1, -1 };
-const int num_particles = 10000;
-GLuint tfo[2] = { -1, -1 }; //transform feedback objects
+//GLuint vao[2] = { -1, -1 };
+//GLuint vbo[2] = { -1, -1 };
+//GLuint tfo[2] = { -1, -1 }; //transform feedback objects
 
-//Nmaes of the VS out variables that should be captured by transform feedback
-const char* xform_feedback_varyings[] = { "pos_out", "vel_out", "for_out", "rho_out", "pres_out", "age_out" };
+//Names of the VS out variables that should be captured by transform feedback
+//const char* xform_feedback_varyings[] = { "pos_out", "vel_out", "for_out", "rho_out", "pres_out", "age_out" };
+
+//const int num_particles = 10000;
 
 namespace AttribLocs // Indices of varying variables in the xform feedback
 {
@@ -61,8 +72,8 @@ namespace AttribLocs // Indices of varying variables in the xform feedback
 }
 
 //These indices get swapped every frame to perform the ping-ponging
-int read_index = 0;  //initially read from VBO_ID[0]
-int write_index = 1; //initially write to VBO_ID[1]
+//int read_index = 0;  //initially read from VBO_ID[0]
+//int write_index = 1; //initially write to VBO_ID[1]
 
 //This structure mirrors the uniform block declared in the shader
 struct SceneUniforms
@@ -165,10 +176,24 @@ void display(GLFWwindow* window)
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SceneData), &SceneData); //Upload the new uniform values.
     glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
+    // Use compute shader
+    glUseProgram(compute_program_handle[0]);
+    glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glUseProgram(compute_program_handle[1]);
+    glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glUseProgram(compute_program_handle[2]);
+    glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    //glUseProgram(shader_program);
+    glDrawArrays(GL_POINTS, 0, SPH_NUM_PARTICLES);
+
+    /*
     glDepthMask(GL_FALSE);
     //BEGIN TRANSFORM FEEDBACK RENDERING
     const bool TFO_SUPPORTED = true;
-
     if (TFO_SUPPORTED == true)
     {
         //Bind the current write transform feedback object.
@@ -192,12 +217,13 @@ void display(GLFWwindow* window)
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pres_varying, vbo[write_index]);
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, age_varying, vbo[write_index]);
     }
+    
 
     //Prepare the pipeline for transform feedback
-    glBeginTransformFeedback(GL_POINTS);
+    //glBeginTransformFeedback(GL_POINTS);
     glBindVertexArray(vao[read_index]);
     glDrawArrays(GL_POINTS, 0, num_particles);
-    glEndTransformFeedback();
+    //glEndTransformFeedback();
 
     if (TFO_SUPPORTED == true)
     {
@@ -208,9 +234,10 @@ void display(GLFWwindow* window)
     //Ping-pong the buffers.
     read_index = 1 - read_index;
     write_index = 1 - write_index;
-
+    
     //END TRANSFORM FEEDBACK RENDERING
     glDepthMask(GL_TRUE);
+    */
 
     if (recording == true)
     {
@@ -239,6 +266,7 @@ void idle()
     glUniform1f(UniformLocs::time, time_sec);
 }
 
+/*
 void transform_feedback_relink(GLuint shader_program)
 {
     //You need to specify which varying variables will capture transform feedback values.
@@ -253,10 +281,37 @@ void transform_feedback_relink(GLuint shader_program)
         printProgramLinkError(shader_program);
     }
 }
-
+*/
 void reload_shader()
 {
     GLuint new_shader = InitShader(vertex_shader.c_str(), fragment_shader.c_str());
+
+    GLuint compute_shader_handle = InitShader(rho_pres_com_shader.c_str());
+    if (compute_shader_handle != -1)
+    {
+        compute_program_handle[0] = glCreateProgram();
+        glAttachShader(compute_program_handle[0], compute_shader_handle);
+        glLinkProgram(compute_program_handle[0]);
+        glDeleteShader(compute_shader_handle);
+    }
+
+    compute_shader_handle = InitShader(force_comp_shader.c_str());
+    if (compute_shader_handle != -1)
+    {
+        compute_program_handle[1] = glCreateProgram();
+        glAttachShader(compute_program_handle[1], compute_shader_handle);
+        glLinkProgram(compute_program_handle[1]);
+        glDeleteShader(compute_shader_handle);
+    }
+
+    compute_shader_handle = InitShader(integrate_comp_shader.c_str());
+    if (compute_shader_handle != -1)
+    {
+        compute_program_handle[2] = glCreateProgram();
+        glAttachShader(compute_program_handle[2], compute_shader_handle);
+        glLinkProgram(compute_program_handle[2]);
+        glDeleteShader(compute_shader_handle);
+    }
 
     if (new_shader == -1) // loading failed
     {
@@ -272,7 +327,8 @@ void reload_shader()
         }
         shader_program = new_shader;
 
-        transform_feedback_relink(shader_program);
+        glLinkProgram(shader_program);
+        //transform_feedback_relink(shader_program);
     }
 }
 
@@ -333,7 +389,7 @@ std::vector<float> make_cube()
     }
 
     std::vector<float> buffer;
-    for (int i = 0; i < 12 * num_particles; i++)
+    for (int i = 0; i < 12 * SPH_NUM_PARTICLES; i++)
     {
         // Push position
         buffer.push_back(positions[i].x);
@@ -363,6 +419,21 @@ std::vector<float> make_cube()
     return buffer;
 }
 
+std::vector<glm::vec2> make_grid()
+{
+    std::vector<glm::vec2> positions;
+    float spacing = -50.0f;
+    for (int i = 0; i < 100; i++)
+    {
+        for (int j = 0; j < 100; j++)
+        {
+            positions.push_back(glm::vec2((float)i + spacing, (float)j + spacing));
+        }
+    }
+
+    return positions;
+}
+
 #define BUFFER_OFFSET( offset )   ((GLvoid*) (offset))
 
 //Initialize OpenGL state. This function only gets called once.
@@ -389,44 +460,47 @@ void initOpenGL()
     //Enable gl_PointCoord in shader
     glEnable(GL_POINT_SPRITE);
     //Allow setting point size in fragment shader
-    glEnable(GL_PROGRAM_POINT_SIZE);
+    //glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     //create TFOs
-    glGenTransformFeedbacks(2, tfo);
+    //glGenTransformFeedbacks(2, tfo);
 
     //all attribs are initially zero
-    std::vector<float> zeros = make_cube(); //particle positions, velocities, forces, densities, pressures, ages
+    //std::vector<float> cube_positions = make_cube(); //particle positions, velocities, forces, densities, pressures, ages
+    std::vector<glm::vec2> grid_positions = make_grid();
 
     //These are the indices in the array passed to glTransformFeedbackVaryings
     // (const char *xform_feedback_varyings[] = { "pos_out", "vel_out", "for_out", "rho_out", "pres_out", "age_out" };)
-    const GLint pos_varying = 0;
+    /*const GLint pos_varying = 0;
     const GLint vel_varying = 1;
     const GLint for_varying = 2;
     const GLint rho_varying = 3;
     const GLint pres_varying = 4;
-    const GLint age_varying = 5;
+    const GLint age_varying = 5;*/
 
     //create VAOs and VBOs
-    glGenVertexArrays(2, vao);
-    glGenBuffers(2, vbo);
+    //glGenVertexArrays(2, vao);
+    //glGenBuffers(2, vbo);
 
-    const int stride = 12 * sizeof(float);
+    //const int stride = 12 * sizeof(float);
 
     const int pos_offset = 0;
-    const int vel_offset = sizeof(glm::vec3);
-    const int for_offset = 2 * sizeof(glm::vec3);
-    const int rho_offset = 3 * sizeof(glm::vec3);
-    const int pres_offset = 3 * sizeof(glm::vec3) + sizeof(float);
-    const int age_offset = 3 * sizeof(glm::vec3) + 2 * sizeof(float);
+    const int vel_offset = sizeof(glm::vec2);
+    const int for_offset = 2 * sizeof(glm::vec2);
+    const int rho_offset = 3 * sizeof(glm::vec2);
+    const int pres_offset = 3 * sizeof(glm::vec2) + sizeof(float);
+    const int age_offset = 3 * sizeof(glm::vec2) + 2 * sizeof(float);
 
-    const int pos_size = num_particles * sizeof(glm::vec3);
-    const int vel_size = num_particles * sizeof(glm::vec3);
-    const int for_size = num_particles * sizeof(glm::vec3);;
-    const int rho_size = num_particles * sizeof(float);
-    const int pres_size = num_particles * sizeof(float);
-    const int age_size = num_particles * sizeof(float);
+    const int pos_size = SPH_NUM_PARTICLES * sizeof(glm::vec2);
+    const int vel_size = SPH_NUM_PARTICLES * sizeof(glm::vec2);
+    const int for_size = SPH_NUM_PARTICLES * sizeof(glm::vec2);;
+    const int rho_size = SPH_NUM_PARTICLES * sizeof(float);
+    const int pres_size = SPH_NUM_PARTICLES * sizeof(float);
+    const int age_size = SPH_NUM_PARTICLES * sizeof(float);
+    const int packed_size = pos_size + vel_size + for_size + rho_size + pres_size + age_size;
 
-    for (int i = 0; i < 2; i++)
+    /*for (int i = 0; i < 2; i++)
     {
         //Create VAO and VBO with interleaved attributes
         glBindVertexArray(vao[i]);
@@ -466,7 +540,38 @@ void initOpenGL()
         glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
         glBindVertexArray(0); //unbind vao
         glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind vbo
-    }
+    }*/
+
+
+    void* initial_data = std::malloc(packed_size);
+    std::memset(initial_data, 0, packed_size);
+    std::memcpy(initial_data, grid_positions.data(), pos_size);
+    glGenBuffers(1, &packed_particles_buffer_handle);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, packed_particles_buffer_handle);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, packed_size, initial_data, GL_DYNAMIC_STORAGE_BIT);
+    std::free(initial_data);
+
+    glGenVertexArrays(1, &particle_position_vao_handle);
+    glBindVertexArray(particle_position_vao_handle);
+
+    glBindBuffer(GL_ARRAY_BUFFER, packed_particles_buffer_handle);
+    // bind buffer containing particle position to vao, stride is 0
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    // enable attribute with binding = 0 (vertex position in the shader) for this vao
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // bindings
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::pos , packed_particles_buffer_handle, pos_offset, pos_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::vel, packed_particles_buffer_handle, vel_offset, vel_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::force, packed_particles_buffer_handle, for_offset, for_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::rho, packed_particles_buffer_handle, rho_offset, rho_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::pres, packed_particles_buffer_handle, pres_offset, pres_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::age, packed_particles_buffer_handle, age_offset, age_size);
+
+    glBindVertexArray(particle_position_vao_handle);
 
     reload_shader();
 
@@ -477,6 +582,7 @@ void initOpenGL()
     glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::scene, scene_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 }
 
 //C++ programs start executing in the main() function.

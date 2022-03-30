@@ -115,5 +115,14 @@
     <None Include="npr-sph_vs.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="force_comp.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="integrate_comp.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="rho_pres_comp.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

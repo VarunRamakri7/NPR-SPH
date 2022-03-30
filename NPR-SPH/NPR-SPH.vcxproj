@@ -184,8 +184,11 @@
     <ClInclude Include="VideoMux.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="force_comp.glsl" />
+    <None Include="integrate_comp.glsl" />
     <None Include="npr-sph_fs.glsl" />
     <None Include="npr-sph_vs.glsl" />
+    <None Include="rho_pres_comp.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

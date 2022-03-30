@@ -1,4 +1,31 @@
-#version 440            
+#version 440
+
+layout(location = 0) uniform mat4 M;
+layout(location = 1) uniform float time;
+
+layout(std140, binding = 0) uniform SceneUniforms
+{
+   mat4 PV;	//camera projection * view matrix
+   vec4 eye_w;	//world-space eye position
+};
+
+layout (location = 2) in vec2 position;
+
+out gl_PerVertex
+{
+    vec4 gl_Position;
+    float gl_PointSize;
+};
+
+void main ()
+{
+    gl_Position = PV*M*vec4(position, 0.0f, 1.0f);;
+    gl_PointSize = 4.0f;
+}
+
+/* // Working rain shader
+#version 440
+
 layout(location = 0) uniform mat4 M;
 layout(location = 1) uniform float time;
 
@@ -64,3 +91,4 @@ float rand(vec2 co)
 {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
+*/

@@ -1,7 +1,7 @@
 #version 440
 
-#define WORK_GROUP_SIZE 1024
-#define NUM_PARTICLES 10000
+#define WORK_GROUP_SIZE 128
+#define NUM_PARTICLES 256
 #define PARTICLE_STIFFNESS 2000
 
 layout (local_size_x = WORK_GROUP_SIZE) in;
@@ -28,8 +28,8 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
     
-    particles[i].rho = 10.0f;
-    particles[i].pres = 2.0f;
+    particles[i].rho += 0.0f;
+    particles[i].pres += 0.0f;
 }
 
 /*layout(local_size_x = 1024) in;

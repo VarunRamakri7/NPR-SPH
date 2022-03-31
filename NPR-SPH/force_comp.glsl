@@ -1,7 +1,7 @@
 #version 440
 
-#define WORK_GROUP_SIZE 1024
-#define NUM_PARTICLES 10000
+#define WORK_GROUP_SIZE 128
+#define NUM_PARTICLES 256
 
 layout (local_size_x = WORK_GROUP_SIZE) in;
 
@@ -27,5 +27,5 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
 
-    particles[i].force = vec4(0.0f, -9.81f, 0.0f, 0.0f); // Add gravity along Y-Axis
+    particles[i].force += vec4(0.0f);
 }

@@ -1,7 +1,7 @@
 #version 440
 
-#define WORK_GROUP_SIZE 1024
-#define NUM_PARTICLES 10000
+#define WORK_GROUP_SIZE 128
+#define NUM_PARTICLES 256
 
 layout (local_size_x = WORK_GROUP_SIZE) in;
 

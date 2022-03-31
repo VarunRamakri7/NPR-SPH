@@ -25,9 +25,9 @@
 #include "DebugCallback.h"
 #include "UniformGui.h"
 
-#define SPH_NUM_PARTICLES 10000
+#define SPH_NUM_PARTICLES 256
 #define SPH_PARTICLE_RADIUS 0.005f
-#define SPH_WORK_GROUP_SIZE 1024
+#define SPH_WORK_GROUP_SIZE 128
 #define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
 
 const int init_window_width = 1024;
@@ -328,26 +328,12 @@ void initOpenGL()
 
     // Initialize particle data
     std::vector<Particle> p(SPH_NUM_PARTICLES);
-    
-    // Get grid positions
-    std::vector<glm::vec4> grid_positions = make_grid();
-    /*float spacing = 5.0f;
-    for (int i = 0; i < 100; i++)
-    {
-        for (int j = 0; j < 10; j++)
-        {
-            for (int k = 0; k < 10; k++)
-            {
-                grid_positions.push_back(glm::vec4((float)i * spacing, (float)j * spacing, (float)k * spacing, 1.0f));
-            }
-        }
-    }*/
-
+    std::vector<glm::vec4> grid_positions = make_grid(); // Get grid positions
     for (int i = 0; i < SPH_NUM_PARTICLES; i++)
     {
         p[i].pos = grid_positions[i];
-        p[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-        p[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 0.0f);
+        p[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+        p[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 1.0f);
         p[i].rho = 2.0f;
         p[i].pres = 10.0f;
         p[i].age = 10.0f;

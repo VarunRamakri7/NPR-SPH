@@ -28,8 +28,7 @@
 #define SPH_NUM_PARTICLES 10000
 #define SPH_PARTICLE_RADIUS 0.005f
 #define SPH_WORK_GROUP_SIZE 128
-// work group count is the ceiling of particle count divided by work group size
-#define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE)
+#define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
 
 const int init_window_width = 1024;
 const int init_window_height = 1024;
@@ -44,22 +43,13 @@ static const std::string rho_pres_com_shader("rho_pres_comp.glsl");
 GLuint shader_program = -1;
 GLuint particle_position_vao = -1;
 GLuint compute_programs[3] = { -1, -1, -1 };
-GLuint packed_particles_buffer = -1;
+GLuint particles_ssbo = -1;
+//GLuint ssbo = -1;
 
 float angle = 0.0f;
 float scale = 0.4f;
 float aspect = 1.0f;
 bool recording = false;
-
-//Ping-pong pairs of objects and buffers since we don't have simultaneous read/write access to VBOs.
-//GLuint vao[2] = { -1, -1 };
-//GLuint vbo[2] = { -1, -1 };
-//GLuint tfo[2] = { -1, -1 }; //transform feedback objects
-
-//Names of the VS out variables that should be captured by transform feedback
-//const char* xform_feedback_varyings[] = { "pos_out", "vel_out", "for_out", "rho_out", "pres_out", "age_out" };
-
-//const int num_particles = 10000;
 
 namespace AttribLocs // Indices of varying variables in the xform feedback
 {
@@ -71,9 +61,15 @@ namespace AttribLocs // Indices of varying variables in the xform feedback
     int age = 5;
 }
 
-//These indices get swapped every frame to perform the ping-ponging
-//int read_index = 0;  //initially read from VBO_ID[0]
-//int write_index = 1; //initially write to VBO_ID[1]
+struct Particle
+{
+    glm::vec4 pos;
+    glm::vec4 vel;
+    glm::vec4 force;
+    float rho;;
+    float pres;
+    float age;
+};
 
 //This structure mirrors the uniform block declared in the shader
 struct SceneUniforms
@@ -97,8 +93,6 @@ namespace UniformLocs
     int M = 0; //model matrix
     int time = 1;
 }
-
-//For an explanation of this program's structure see https://www.glfw.org/docs/3.3/quick.html 
 
 void draw_gui(GLFWwindow* window)
 {
@@ -162,12 +156,10 @@ void display(GLFWwindow* window)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     SceneData.eye_w = glm::vec4(0.0f, -50.0f, -55.0f, 1.0f);
-    glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(scale));
+    glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, -50.0f, 0.0f)) * glm::scale(glm::vec3(scale));
     glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 P = glm::perspective(glm::pi<float>() / 4.0f, 1.0f, 0.1f, 100.0f);
     SceneData.PV = P * V;
-
-    glUseProgram(shader_program);
 
     //Set uniforms
     glUniformMatrix4fv(UniformLocs::M, 1, false, glm::value_ptr(M));
@@ -187,57 +179,11 @@ void display(GLFWwindow* window)
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    //glUseProgram(shader_program);
+    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
+    //glm::vec4* p = (glm::vec4*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+    glUseProgram(shader_program);
     glDrawArrays(GL_POINTS, 0, SPH_NUM_PARTICLES);
-
-    /*
-    glDepthMask(GL_FALSE);
-    //BEGIN TRANSFORM FEEDBACK RENDERING
-    const bool TFO_SUPPORTED = true;
-    if (TFO_SUPPORTED == true)
-    {
-        //Bind the current write transform feedback object.
-        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfo[write_index]);
-    }
-    else
-    {
-        //Binding the transform feedback object recalls the buffer range state shown below. If
-        //your system does not support transform feedback objects you can uncomment the following lines.
-        const GLint pos_varying = 0;
-        const GLint vel_varying = 1;
-        const GLint for_varying = 2;
-        const GLint rho_varying = 3;
-        const GLint pres_varying = 4;
-        const GLint age_varying = 5;
-
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pos_varying, vbo[write_index]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, vel_varying, vbo[write_index]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, for_varying, vbo[write_index]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, rho_varying, vbo[write_index]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pres_varying, vbo[write_index]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, age_varying, vbo[write_index]);
-    }
-    
-
-    //Prepare the pipeline for transform feedback
-    //glBeginTransformFeedback(GL_POINTS);
-    glBindVertexArray(vao[read_index]);
-    glDrawArrays(GL_POINTS, 0, num_particles);
-    //glEndTransformFeedback();
-
-    if (TFO_SUPPORTED == true)
-    {
-        //Bind the current write transform feedback object.
-        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-    }
-
-    //Ping-pong the buffers.
-    read_index = 1 - read_index;
-    write_index = 1 - write_index;
-    
-    //END TRANSFORM FEEDBACK RENDERING
-    glDepthMask(GL_TRUE);
-    */
 
     if (recording == true)
     {
@@ -266,22 +212,6 @@ void idle()
     glUniform1f(UniformLocs::time, time_sec);
 }
 
-/*
-void transform_feedback_relink(GLuint shader_program)
-{
-    //You need to specify which varying variables will capture transform feedback values.
-    glTransformFeedbackVaryings(shader_program, 3, xform_feedback_varyings, GL_INTERLEAVED_ATTRIBS);
-
-    //Must relink the program after specifying transform feedback varyings.
-    glLinkProgram(shader_program);
-    int status;
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &status);
-    if (status == GL_FALSE)
-    {
-        printProgramLinkError(shader_program);
-    }
-}
-*/
 void reload_shader()
 {
     GLuint new_shader = InitShader(vertex_shader.c_str(), fragment_shader.c_str());
@@ -289,28 +219,19 @@ void reload_shader()
     GLuint compute_shader_handle = InitShader(rho_pres_com_shader.c_str());
     if (compute_shader_handle != -1)
     {
-        compute_programs[0] = glCreateProgram();
-        glAttachShader(compute_programs[0], compute_shader_handle);
-        glLinkProgram(compute_programs[0]);
-        glDeleteShader(compute_shader_handle);
+        compute_programs[0] = compute_shader_handle;
     }
 
     compute_shader_handle = InitShader(force_comp_shader.c_str());
     if (compute_shader_handle != -1)
     {
-        compute_programs[1] = glCreateProgram();
-        glAttachShader(compute_programs[1], compute_shader_handle);
-        glLinkProgram(compute_programs[1]);
-        glDeleteShader(compute_shader_handle);
+        compute_programs[1] = compute_shader_handle;
     }
 
     compute_shader_handle = InitShader(integrate_comp_shader.c_str());
     if (compute_shader_handle != -1)
     {
-        compute_programs[2] = glCreateProgram();
-        glAttachShader(compute_programs[2], compute_shader_handle);
-        glLinkProgram(compute_programs[2]);
-        glDeleteShader(compute_shader_handle);
+        compute_programs[2] = compute_shader_handle;
     }
 
     if (new_shader == -1) // loading failed
@@ -373,61 +294,23 @@ void resize(GLFWwindow* window, int width, int height)
     aspect = float(width) / float(height);
 }
 
-std::vector<float> make_cube()
+/// <summary>
+/// Make positions for a cube grid
+/// </summary>
+/// <returns>Vector of positions for the grid</returns>
+std::vector<glm::vec4> make_grid()
 {
-    std::vector<glm::vec3> positions;
+    std::vector<glm::vec4> positions;
     float spacing = -50.0f;
-    for (int i = 0; i < 12 * 100; i++)
+
+    for (int i = 0; i < 100; i++)
     {
         for (int j = 0; j < 10; j++)
         {
             for (int k = 0; k < 10; k++)
             {
-                positions.push_back(glm::vec3((float)i + spacing, (float)j + spacing, (float)k + spacing));
+                positions.push_back(glm::vec4((float)i + spacing, (float)j + spacing, (float)k + spacing, 0.0f));
             }
-        }
-    }
-
-    std::vector<float> buffer;
-    for (int i = 0; i < 12 * SPH_NUM_PARTICLES; i++)
-    {
-        // Push position
-        buffer.push_back(positions[i].x);
-        buffer.push_back(positions[i].y);
-        buffer.push_back(positions[i].z);
-
-        // Push velocity
-        buffer.push_back(0.0f);
-        buffer.push_back(1.0f);
-        buffer.push_back(0.0f);
-
-        // Push forces
-        buffer.push_back(0.0f);
-        buffer.push_back(-9.81f); // Gravity along Y-Axis
-        buffer.push_back(0.0f);
-
-        // Push pressue
-        buffer.push_back(1.0f);
-
-        // Push density
-        buffer.push_back(1.0f);
-
-        // Push age
-        buffer.push_back(10.0f);
-    }
-
-    return buffer;
-}
-
-std::vector<glm::vec2> make_grid()
-{
-    std::vector<glm::vec2> positions;
-    float spacing = -50.0f;
-    for (int i = 0; i < 100; i++)
-    {
-        for (int j = 0; j < 100; j++)
-        {
-            positions.push_back(glm::vec2((float)i + spacing, (float)j + spacing));
         }
     }
 
@@ -457,121 +340,26 @@ void initOpenGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE); //additive alpha blending
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //semitransparent alpha blending
 
-    //Enable gl_PointCoord in shader
-    glEnable(GL_POINT_SPRITE);
-    //Allow setting point size in fragment shader
-    //glEnable(GL_PROGRAM_POINT_SIZE);
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-
-    //create TFOs
-    //glGenTransformFeedbacks(2, tfo);
-
-    //all attribs are initially zero
-    //std::vector<float> cube_positions = make_cube(); //particle positions, velocities, forces, densities, pressures, ages
-    std::vector<glm::vec2> grid_positions = make_grid();
-
-    //These are the indices in the array passed to glTransformFeedbackVaryings
-    // (const char *xform_feedback_varyings[] = { "pos_out", "vel_out", "for_out", "rho_out", "pres_out", "age_out" };)
-    /*const GLint pos_varying = 0;
-    const GLint vel_varying = 1;
-    const GLint for_varying = 2;
-    const GLint rho_varying = 3;
-    const GLint pres_varying = 4;
-    const GLint age_varying = 5;*/
-
-    //create VAOs and VBOs
-    //glGenVertexArrays(2, vao);
-    //glGenBuffers(2, vbo);
-
-    //const int stride = 12 * sizeof(float);
-
-    const int pos_offset = 0;
-    const int vel_offset = sizeof(glm::vec2);
-    const int for_offset = 2 * sizeof(glm::vec2);
-    const int rho_offset = 3 * sizeof(glm::vec2);
-    const int pres_offset = 3 * sizeof(glm::vec2) + sizeof(float);
-    const int age_offset = 3 * sizeof(glm::vec2) + 2 * sizeof(float);
-
-    const int pos_size = SPH_NUM_PARTICLES * sizeof(glm::vec2);
-    const int vel_size = SPH_NUM_PARTICLES * sizeof(glm::vec2);
-    const int for_size = SPH_NUM_PARTICLES * sizeof(glm::vec2);;
-    const int rho_size = SPH_NUM_PARTICLES * sizeof(float);
-    const int pres_size = SPH_NUM_PARTICLES * sizeof(float);
-    const int age_size = SPH_NUM_PARTICLES * sizeof(float);
-    const int packed_size = pos_size + vel_size + for_size + rho_size + pres_size + age_size;
-
-    /*for (int i = 0; i < 2; i++)
+    // Initialize particle data
+    std::vector<Particle> p(SPH_NUM_PARTICLES);
+    std::vector<glm::vec4> grid_positions = make_grid();
+    for (int i = 0; i < SPH_NUM_PARTICLES; i++)
     {
-        //Create VAO and VBO with interleaved attributes
-        glBindVertexArray(vao[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[i]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * zeros.size(), zeros.data(), GL_DYNAMIC_COPY);
+        p[i].pos = grid_positions[i];
+        p[i].vel = glm::vec4(1.0, 0.0, 0.0, 0.0);
+        p[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 0.0f);
+        p[i].rho = 2.0f;
+        p[i].pres = 10.0f;
+        p[i].age = 10.0f;
+    }
 
-        glEnableVertexAttribArray(AttribLocs::pos);
-        glVertexAttribPointer(AttribLocs::pos, 3, GL_FLOAT, false, stride, BUFFER_OFFSET(pos_offset));
+    glGenBuffers(1, &particles_ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * SPH_NUM_PARTICLES, p.data(), GL_STREAM_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_ssbo);
 
-        glEnableVertexAttribArray(AttribLocs::vel);
-        glVertexAttribPointer(AttribLocs::vel, 3, GL_FLOAT, false, stride, BUFFER_OFFSET(vel_offset));
-
-        glEnableVertexAttribArray(AttribLocs::force);
-        glVertexAttribPointer(AttribLocs::force, 3, GL_FLOAT, false, stride, BUFFER_OFFSET(for_offset));
-
-        glEnableVertexAttribArray(AttribLocs::rho);
-        glVertexAttribPointer(AttribLocs::rho, 1, GL_FLOAT, false, stride, BUFFER_OFFSET(rho_offset));
-
-        glEnableVertexAttribArray(AttribLocs::pres);
-        glVertexAttribPointer(AttribLocs::pres, 1, GL_FLOAT, false, stride, BUFFER_OFFSET(pres_offset));
-
-        glEnableVertexAttribArray(AttribLocs::age);
-        glVertexAttribPointer(AttribLocs::age, 1, GL_FLOAT, false, stride, BUFFER_OFFSET(age_offset));
-
-        //Tell the TFO where each varying variable should be written in the VBO.
-
-        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfo[i]);
-
-        //Specify VBO to write into
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pos_varying, vbo[i]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, vel_varying, vbo[i]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, for_varying, vbo[i]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, rho_varying, vbo[i]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, pres_varying, vbo[i]);
-        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, age_varying, vbo[i]);
-
-        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-        glBindVertexArray(0); //unbind vao
-        glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind vbo
-    }*/
-
-
-    void* initial_data = std::malloc(packed_size);
-    std::memset(initial_data, 0, packed_size);
-    std::memcpy(initial_data, grid_positions.data(), pos_size);
-    glGenBuffers(1, &packed_particles_buffer);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, packed_particles_buffer);
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, packed_size, initial_data, GL_DYNAMIC_STORAGE_BIT);
-    std::free(initial_data);
-
-    glGenVertexArrays(1, &particle_position_vao);
-    glBindVertexArray(particle_position_vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, packed_particles_buffer);
-    // bind buffer containing particle position to vao, stride is 0
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-    // enable attribute with binding = 0 (vertex position in the shader) for this vao
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    // bindings
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::pos , packed_particles_buffer, pos_offset, pos_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::vel, packed_particles_buffer, vel_offset, vel_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::force, packed_particles_buffer, for_offset, for_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::rho, packed_particles_buffer, rho_offset, rho_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::pres, packed_particles_buffer, pres_offset, pres_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::age, packed_particles_buffer, age_offset, age_size);
-
-    glBindVertexArray(particle_position_vao);
+    glEnable(GL_POINT_SPRITE);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     reload_shader();
 
@@ -582,7 +370,6 @@ void initOpenGL()
     glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::scene, scene_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 }
 
 //C++ programs start executing in the main() function.

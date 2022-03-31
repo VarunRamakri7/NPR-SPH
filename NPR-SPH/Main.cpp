@@ -362,7 +362,7 @@ void initOpenGL()
 
     glBindBuffer(GL_ARRAY_BUFFER, particles_ssbo);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr); // Bind buffer containing particle positions to VAO
-    glEnableVertexAttribArray(2); // Enable attribute with location = 0 (vertex position) for VAO
+    glEnableVertexAttribArray(0); // Enable attribute with location = 2 (vertex position) for VAO
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

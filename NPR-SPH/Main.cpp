@@ -42,9 +42,9 @@ static const std::string integrate_comp_shader("integrate_comp.glsl");
 static const std::string rho_pres_com_shader("rho_pres_comp.glsl");
 
 GLuint shader_program = -1;
-GLuint particle_position_vao_handle = -1;
-GLuint compute_program_handle[3]{ -1, -1, -1 };
-GLuint packed_particles_buffer_handle = -1;
+GLuint particle_position_vao = -1;
+GLuint compute_programs[3] = { -1, -1, -1 };
+GLuint packed_particles_buffer = -1;
 
 float angle = 0.0f;
 float scale = 0.4f;
@@ -107,7 +107,7 @@ void draw_gui(GLFWwindow* window)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    UniformGui(shader_program);
+    //UniformGui(shader_program);
 
     //Draw Gui
     ImGui::Begin("Debug window");
@@ -177,13 +177,13 @@ void display(GLFWwindow* window)
     glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
     // Use compute shader
-    glUseProgram(compute_program_handle[0]);
+    glUseProgram(compute_programs[0]);
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    glUseProgram(compute_program_handle[1]);
+    glUseProgram(compute_programs[1]);
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    glUseProgram(compute_program_handle[2]);
+    glUseProgram(compute_programs[2]);
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
@@ -289,27 +289,27 @@ void reload_shader()
     GLuint compute_shader_handle = InitShader(rho_pres_com_shader.c_str());
     if (compute_shader_handle != -1)
     {
-        compute_program_handle[0] = glCreateProgram();
-        glAttachShader(compute_program_handle[0], compute_shader_handle);
-        glLinkProgram(compute_program_handle[0]);
+        compute_programs[0] = glCreateProgram();
+        glAttachShader(compute_programs[0], compute_shader_handle);
+        glLinkProgram(compute_programs[0]);
         glDeleteShader(compute_shader_handle);
     }
 
     compute_shader_handle = InitShader(force_comp_shader.c_str());
     if (compute_shader_handle != -1)
     {
-        compute_program_handle[1] = glCreateProgram();
-        glAttachShader(compute_program_handle[1], compute_shader_handle);
-        glLinkProgram(compute_program_handle[1]);
+        compute_programs[1] = glCreateProgram();
+        glAttachShader(compute_programs[1], compute_shader_handle);
+        glLinkProgram(compute_programs[1]);
         glDeleteShader(compute_shader_handle);
     }
 
     compute_shader_handle = InitShader(integrate_comp_shader.c_str());
     if (compute_shader_handle != -1)
     {
-        compute_program_handle[2] = glCreateProgram();
-        glAttachShader(compute_program_handle[2], compute_shader_handle);
-        glLinkProgram(compute_program_handle[2]);
+        compute_programs[2] = glCreateProgram();
+        glAttachShader(compute_programs[2], compute_shader_handle);
+        glLinkProgram(compute_programs[2]);
         glDeleteShader(compute_shader_handle);
     }
 
@@ -546,15 +546,15 @@ void initOpenGL()
     void* initial_data = std::malloc(packed_size);
     std::memset(initial_data, 0, packed_size);
     std::memcpy(initial_data, grid_positions.data(), pos_size);
-    glGenBuffers(1, &packed_particles_buffer_handle);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, packed_particles_buffer_handle);
+    glGenBuffers(1, &packed_particles_buffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, packed_particles_buffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, packed_size, initial_data, GL_DYNAMIC_STORAGE_BIT);
     std::free(initial_data);
 
-    glGenVertexArrays(1, &particle_position_vao_handle);
-    glBindVertexArray(particle_position_vao_handle);
+    glGenVertexArrays(1, &particle_position_vao);
+    glBindVertexArray(particle_position_vao);
 
-    glBindBuffer(GL_ARRAY_BUFFER, packed_particles_buffer_handle);
+    glBindBuffer(GL_ARRAY_BUFFER, packed_particles_buffer);
     // bind buffer containing particle position to vao, stride is 0
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
     // enable attribute with binding = 0 (vertex position in the shader) for this vao
@@ -564,14 +564,14 @@ void initOpenGL()
     glBindVertexArray(0);
 
     // bindings
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::pos , packed_particles_buffer_handle, pos_offset, pos_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::vel, packed_particles_buffer_handle, vel_offset, vel_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::force, packed_particles_buffer_handle, for_offset, for_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::rho, packed_particles_buffer_handle, rho_offset, rho_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::pres, packed_particles_buffer_handle, pres_offset, pres_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::age, packed_particles_buffer_handle, age_offset, age_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::pos , packed_particles_buffer, pos_offset, pos_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::vel, packed_particles_buffer, vel_offset, vel_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::force, packed_particles_buffer, for_offset, for_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::rho, packed_particles_buffer, rho_offset, rho_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::pres, packed_particles_buffer, pres_offset, pres_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, AttribLocs::age, packed_particles_buffer, age_offset, age_size);
 
-    glBindVertexArray(particle_position_vao_handle);
+    glBindVertexArray(particle_position_vao);
 
     reload_shader();
 

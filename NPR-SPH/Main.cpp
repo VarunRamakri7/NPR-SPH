@@ -50,16 +50,6 @@ float scale = 0.4f;
 float aspect = 1.0f;
 bool recording = false;
 
-namespace AttribLocs // Indices of particle attributes
-{
-    int pos = 0;
-    int vel = 1;
-    int force = 2;
-    int rho = 3;
-    int pres = 4;
-    int age = 5;
-}
-
 struct Particle
 {
     glm::vec4 pos;
@@ -77,12 +67,9 @@ struct SceneUniforms
     glm::vec4 eye_w;	//world-space eye position
 } SceneData;
 
-//IDs for the buffer objects holding the uniform block data
 GLuint scene_ubo = -1;
-
 namespace UboBinding
 {
-    //These values come from the binding value specified in the shader block layout
     int scene = 0;
 }
 

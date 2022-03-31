@@ -283,8 +283,8 @@ void resize(GLFWwindow* window, int width, int height)
 /// <returns>Vector of positions for the grid</returns>
 std::vector<glm::vec4> make_grid()
 {
-    std::vector<glm::vec4> positions(SPH_NUM_PARTICLES);
-    float spacing = 10.0f;
+    std::vector<glm::vec4> positions;
+    float spacing = 2.5f;
 
     for (int i = 0; i < 100; i++)
     {
@@ -292,7 +292,7 @@ std::vector<glm::vec4> make_grid()
         {
             for (int k = 0; k < 10; k++)
             {
-                positions.push_back(glm::vec4((float)i + spacing, (float)j + spacing, (float)k + spacing, 1.0f));
+                positions.push_back(glm::vec4((float)i * spacing, (float)j * spacing, (float)k * spacing, 1.0f));
             }
         }
     }
@@ -328,7 +328,21 @@ void initOpenGL()
 
     // Initialize particle data
     std::vector<Particle> p(SPH_NUM_PARTICLES);
+    
+    // Get grid positions
     std::vector<glm::vec4> grid_positions = make_grid();
+    /*float spacing = 5.0f;
+    for (int i = 0; i < 100; i++)
+    {
+        for (int j = 0; j < 10; j++)
+        {
+            for (int k = 0; k < 10; k++)
+            {
+                grid_positions.push_back(glm::vec4((float)i * spacing, (float)j * spacing, (float)k * spacing, 1.0f));
+            }
+        }
+    }*/
+
     for (int i = 0; i < SPH_NUM_PARTICLES; i++)
     {
         p[i].pos = grid_positions[i];

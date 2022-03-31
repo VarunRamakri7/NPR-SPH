@@ -5,6 +5,9 @@
 
 layout (local_size_x = WORK_GROUP_SIZE) in;
 
+layout(location = 0) uniform mat4 M;
+layout(location = 1) uniform float time;
+
 struct Particle
 {
     vec4 pos;

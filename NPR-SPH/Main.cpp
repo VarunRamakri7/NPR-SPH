@@ -63,8 +63,8 @@ struct Particle
 //This structure mirrors the uniform block declared in the shader
 struct SceneUniforms
 {
-    glm::mat4 PV;	//camera projection * view matrix
-    glm::vec4 eye_w;	//world-space eye position
+    glm::mat4 PV; //camera projection * view matrix
+    glm::vec4 eye_w; //world-space eye position
 } SceneData;
 
 GLuint scene_ubo = -1;
@@ -283,8 +283,8 @@ void resize(GLFWwindow* window, int width, int height)
 /// <returns>Vector of positions for the grid</returns>
 std::vector<glm::vec4> make_grid()
 {
-    std::vector<glm::vec4> positions;
-    float spacing = -50.0f;
+    std::vector<glm::vec4> positions(SPH_NUM_PARTICLES);
+    float spacing = 10.0f;
 
     for (int i = 0; i < 100; i++)
     {
@@ -348,7 +348,7 @@ void initOpenGL()
     glBindVertexArray(particle_position_vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, particles_ssbo);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), BUFFER_OFFSET(0)); // Bind buffer containing particle positions to VAO
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), nullptr); // Bind buffer containing particle positions to VAO
     glEnableVertexAttribArray(0); // Enable attribute with location = 0 (vertex position) for VAO
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);

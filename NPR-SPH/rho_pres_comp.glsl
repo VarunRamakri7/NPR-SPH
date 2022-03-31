@@ -2,6 +2,13 @@
 
 #define WORK_GROUP_SIZE 128
 #define NUM_PARTICLES 256
+
+// For calculations
+#define PI_FLOAT 3.1415927410125732421875f
+#define PARTICLE_RADIUS 0.005f
+#define PARTICLE_RESTING_DENSITY 1000
+#define PARTICLE_MASS 0.02 // Mass = Density * Volume
+#define SMOOTHING_LENGTH (4 * PARTICLE_RADIUS)
 #define PARTICLE_STIFFNESS 2000
 
 layout (local_size_x = WORK_GROUP_SIZE) in;

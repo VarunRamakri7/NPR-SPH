@@ -3,6 +3,10 @@
 #define WORK_GROUP_SIZE 128
 #define NUM_PARTICLES 256
 
+// Constants for calculations
+#define TIME_STEP 0.0001f
+#define WALL_DAMPING 0.3f
+
 layout (local_size_x = WORK_GROUP_SIZE) in;
 
 layout(location = 0) uniform mat4 M;

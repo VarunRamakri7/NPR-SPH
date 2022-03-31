@@ -27,7 +27,7 @@
 
 #define SPH_NUM_PARTICLES 10000
 #define SPH_PARTICLE_RADIUS 0.005f
-#define SPH_WORK_GROUP_SIZE 128
+#define SPH_WORK_GROUP_SIZE 1024
 #define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
 
 const int init_window_width = 1024;
@@ -41,17 +41,16 @@ static const std::string integrate_comp_shader("integrate_comp.glsl");
 static const std::string rho_pres_com_shader("rho_pres_comp.glsl");
 
 GLuint shader_program = -1;
-GLuint particle_position_vao = -1;
 GLuint compute_programs[3] = { -1, -1, -1 };
+GLuint particle_position_vao = -1;
 GLuint particles_ssbo = -1;
-//GLuint ssbo = -1;
 
 float angle = 0.0f;
 float scale = 0.4f;
 float aspect = 1.0f;
 bool recording = false;
 
-namespace AttribLocs // Indices of varying variables in the xform feedback
+namespace AttribLocs // Indices of particle attributes
 {
     int pos = 0;
     int vel = 1;
@@ -309,7 +308,7 @@ std::vector<glm::vec4> make_grid()
         {
             for (int k = 0; k < 10; k++)
             {
-                positions.push_back(glm::vec4((float)i + spacing, (float)j + spacing, (float)k + spacing, 0.0f));
+                positions.push_back(glm::vec4((float)i + spacing, (float)j + spacing, (float)k + spacing, 1.0f));
             }
         }
     }
@@ -340,6 +339,9 @@ void initOpenGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE); //additive alpha blending
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //semitransparent alpha blending
 
+    glEnable(GL_POINT_SPRITE);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
     // Initialize particle data
     std::vector<Particle> p(SPH_NUM_PARTICLES);
     std::vector<glm::vec4> grid_positions = make_grid();
@@ -358,8 +360,17 @@ void initOpenGL()
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * SPH_NUM_PARTICLES, p.data(), GL_STREAM_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_ssbo);
 
-    glEnable(GL_POINT_SPRITE);
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    glGenVertexArrays(1, &particle_position_vao);
+    glBindVertexArray(particle_position_vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, particles_ssbo);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr); // Bind buffer containing particle positions to VAO
+    glEnableVertexAttribArray(2); // Enable attribute with location = 0 (vertex position) for VAO
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    glBindVertexArray(particle_position_vao);
 
     reload_shader();
 

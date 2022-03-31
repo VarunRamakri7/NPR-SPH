@@ -332,8 +332,8 @@ void initOpenGL()
     for (int i = 0; i < SPH_NUM_PARTICLES; i++)
     {
         p[i].pos = grid_positions[i];
-        p[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-        p[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 1.0f);
+        p[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); // Constant velocity along Y-Axis
+        p[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 1.0f); // Gravity along the Y-Axis
         p[i].rho = 2.0f;
         p[i].pres = 10.0f;
         p[i].age = 10.0f;

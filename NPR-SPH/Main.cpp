@@ -248,7 +248,6 @@ void reload_shader()
         shader_program = new_shader;
 
         glLinkProgram(shader_program);
-        //transform_feedback_relink(shader_program);
     }
 }
 
@@ -287,10 +286,8 @@ void mouse_button(GLFWwindow* window, int button, int action, int mods)
 
 void resize(GLFWwindow* window, int width, int height)
 {
-    //Set viewport to cover entire framebuffer
-    glViewport(0, 0, width, height);
-    //Set aspect ratio used in view matrix calculation
-    aspect = float(width) / float(height);
+    glViewport(0, 0, width, height); //Set viewport to cover entire framebuffer
+    aspect = float(width) / float(height); // Set aspect ratio
 }
 
 /// <summary>
@@ -348,7 +345,7 @@ void initOpenGL()
     for (int i = 0; i < SPH_NUM_PARTICLES; i++)
     {
         p[i].pos = grid_positions[i];
-        p[i].vel = glm::vec4(1.0, 0.0, 0.0, 0.0);
+        p[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
         p[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 0.0f);
         p[i].rho = 2.0f;
         p[i].pres = 10.0f;

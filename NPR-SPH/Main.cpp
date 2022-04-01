@@ -29,6 +29,7 @@
 #define SPH_PARTICLE_RADIUS 0.005f
 #define SPH_WORK_GROUP_SIZE 128
 #define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
+#define PARTICLE_SPACING 2.5f
 
 const int init_window_width = 1024;
 const int init_window_height = 1024;
@@ -45,6 +46,7 @@ GLuint compute_programs[3] = { -1, -1, -1 };
 GLuint particle_position_vao = -1;
 GLuint particles_ssbo = -1;
 
+glm::vec3 eye = glm::vec3(0.0f, PARTICLE_SPACING, 5.0f);
 float angle = 0.0f;
 float scale = 0.4f;
 float aspect = 1.0f;
@@ -123,6 +125,7 @@ void draw_gui(GLFWwindow* window)
 
     ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
     ImGui::SliderFloat("Scale", &scale, 0.0001f, 2.0f);
+    ImGui::SliderFloat3("Camera Eye", &eye[0], -10.0f, 10.0f);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
@@ -141,8 +144,8 @@ void display(GLFWwindow* window)
     //Clear the screen to the color previously specified in the glClearColor(...) call.
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    SceneData.eye_w = glm::vec4(0.0f, -50.0f, -55.0f, 1.0f);
-    glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, -50.0f, 0.0f)) * glm::scale(glm::vec3(scale));
+    SceneData.eye_w = glm::vec4(eye, 1.0f);
+    glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(scale));
     glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 P = glm::perspective(glm::pi<float>() / 4.0f, 1.0f, 0.1f, 100.0f);
     SceneData.PV = P * V;
@@ -165,8 +168,9 @@ void display(GLFWwindow* window)
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
-    //glm::vec4* p = (glm::vec4*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
+    Particle* p = (Particle*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
     glUseProgram(shader_program);
     glDrawArrays(GL_POINTS, 0, SPH_NUM_PARTICLES);
@@ -284,15 +288,14 @@ void resize(GLFWwindow* window, int width, int height)
 std::vector<glm::vec4> make_grid()
 {
     std::vector<glm::vec4> positions;
-    float spacing = 2.5f;
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 16; i++)
     {
-        for (int j = 0; j < 10; j++)
+        for (int j = 0; j < 4; j++)
         {
-            for (int k = 0; k < 10; k++)
+            for (int k = 0; k < 4; k++)
             {
-                positions.push_back(glm::vec4((float)i * spacing, (float)j * spacing, (float)k * spacing, 1.0f));
+                positions.push_back(glm::vec4((float)i * PARTICLE_SPACING, (float)j * PARTICLE_SPACING, (float)k * PARTICLE_SPACING, 1.0f));
             }
         }
     }
@@ -327,21 +330,21 @@ void initOpenGL()
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     // Initialize particle data
-    std::vector<Particle> p(SPH_NUM_PARTICLES);
+    std::vector<Particle> particles(SPH_NUM_PARTICLES);
     std::vector<glm::vec4> grid_positions = make_grid(); // Get grid positions
     for (int i = 0; i < SPH_NUM_PARTICLES; i++)
     {
-        p[i].pos = grid_positions[i];
-        p[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); // Constant velocity along Y-Axis
-        p[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 1.0f); // Gravity along the Y-Axis
-        p[i].rho = 2.0f;
-        p[i].pres = 10.0f;
-        p[i].age = 10.0f;
+        particles[i].pos = grid_positions[i];
+        particles[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); // Constant velocity along Y-Axis
+        particles[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 1.0f); // Gravity along the Y-Axis
+        particles[i].rho = 2.0f;
+        particles[i].pres = 1.0f;
+        particles[i].age = 1.0f;
     }
 
     glGenBuffers(1, &particles_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * SPH_NUM_PARTICLES, p.data(), GL_STREAM_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * SPH_NUM_PARTICLES, particles.data(), GL_STREAM_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_ssbo);
 
     glGenVertexArrays(1, &particle_position_vao);

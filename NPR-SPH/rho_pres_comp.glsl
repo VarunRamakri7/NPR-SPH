@@ -4,7 +4,7 @@
 #define NUM_PARTICLES 256
 
 // For calculations
-#define PI_FLOAT 3.1415927410125732421875f
+#define PI 3.141592741f
 #define PARTICLE_RADIUS 0.005f
 #define PARTICLE_RESTING_DENSITY 1000
 #define PARTICLE_MASS 0.02 // Mass = Density * Volume
@@ -35,8 +35,8 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
     
-    particles[i].rho += 0.0f;
-    particles[i].pres += 0.0f;
+    particles[i].rho = 3.0f;
+    particles[i].pres = 7.0f;
 }
 
 /*layout(local_size_x = 1024) in;

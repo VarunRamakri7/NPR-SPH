@@ -3,8 +3,8 @@
 #define WORK_GROUP_SIZE 128
 #define NUM_PARTICLES 256
 
-// Constants for calculations
-#define TIME_STEP 0.0001f
+// For calculations
+#define TIME_STEP 0.01f
 #define WALL_DAMPING 0.3f
 
 layout (local_size_x = WORK_GROUP_SIZE) in;
@@ -32,6 +32,7 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
 
-    particles[i].vel += particles[i].force * 0.01f;
-    particles[i].pos += particles[i].vel * 0.01f;
+    particles[i].vel.xyz += particles[i].force.xyz * TIME_STEP;
+    particles[i].pos.xyz += particles[i].vel.xyz * TIME_STEP;
+
 }

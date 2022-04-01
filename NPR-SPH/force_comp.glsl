@@ -3,8 +3,8 @@
 #define WORK_GROUP_SIZE 128
 #define NUM_PARTICLES 256
 
-// Constants for calculations
-#define PI_FLOAT 3.1415927410125732421875f
+// For calculations
+#define PI 3.141592741f
 #define PARTICLE_RADIUS 0.005f
 #define PARTICLE_RESTING_DENSITY 1000
 #define PARTICLE_MASS 0.02 // Mass = Density * Volume

@@ -25,11 +25,10 @@
 #include "DebugCallback.h"
 #include "UniformGui.h"
 
-#define SPH_NUM_PARTICLES 10000
-#define SPH_PARTICLE_RADIUS 0.005f
+#define SPH_NUM_PARTICLES 1000
+#define SPH_PARTICLE_RADIUS 0.5f
 #define SPH_WORK_GROUP_SIZE 1024
 #define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
-#define PARTICLE_SPACING 2.5f
 
 const int init_window_width = 1024;
 const int init_window_height = 1024;
@@ -46,10 +45,10 @@ GLuint compute_programs[3] = { -1, -1, -1 };
 GLuint particle_position_vao = -1;
 GLuint particles_ssbo = -1;
 
-glm::vec3 eye = glm::vec3(3.25f, 0.0f, -9.0f);
-glm::vec3 center = glm::vec3(3.25f, 1.0f, 0.0f);
+glm::vec3 eye = glm::vec3(-5.2f, 2.0f, -5.0f);
+glm::vec3 center = glm::vec3(0.0f, 2.0f, 0.0f);
 float angle = 0.0f;
-float scale = 0.175f;
+float scale = 0.75f;
 float aspect = 1.0f;
 bool recording = false;
 
@@ -291,13 +290,14 @@ std::vector<glm::vec4> make_grid()
 {
     std::vector<glm::vec4> positions;
 
-    for (int i = 0; i < 100; i++)
+    // 10x10x10 Cube of particles
+    for (int i = 0; i < 10; i++)
     {
         for (int j = 0; j < 10; j++)
         {
             for (int k = 0; k < 10; k++)
             {
-                positions.push_back(glm::vec4((float)i * PARTICLE_SPACING, (float)j * PARTICLE_SPACING, (float)k * PARTICLE_SPACING, 1.0f));
+                positions.push_back(glm::vec4((float)i * SPH_PARTICLE_RADIUS, (float)j * SPH_PARTICLE_RADIUS, (float)k * SPH_PARTICLE_RADIUS, 1.0f));
             }
         }
     }
@@ -338,9 +338,9 @@ void initOpenGL()
     {
         particles[i].pos = grid_positions[i];
         particles[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); // Constant velocity along Y-Axis
-        particles[i].force = glm::vec4(0.0f, -9.81f, 0.0f, 1.0f); // Gravity along the Y-Axis
-        particles[i].rho = 2.0f;
-        particles[i].pres = 1.0f;
+        particles[i].force = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Gravity along the Y-Axis
+        particles[i].rho = 0.0f;
+        particles[i].pres = 0.0f;
         particles[i].age = 1.0f;
     }
 

@@ -55,8 +55,19 @@ void main(void)
 {   
     fragcolor = celshading();
     if (pass == 1) {
+        // get line thickness (0-1)
+        float ndc = gl_FragCoord.z * 2.0 - 1.0; 
+        float near = 0.1; 
+        float far  = 100.0; 
+        float linearDepth = (2.0 * near * far) / (far + near - ndc * (far - near));	
+        float line_width =  1 - 1/pow(linearDepth,2) * 5.0; // 5.0 to push back 
+
+        // added distance fade effect
+        // remap to 0 - 0.3
+        line_width = clamp(line_width/2, 0, 0.3);
+
         // colored outline: fragcolor*outline()
-        fragcolor = outline() * blur();
+        fragcolor = outline() * blur() + line_width;
     }
 }
 

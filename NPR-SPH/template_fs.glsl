@@ -1,6 +1,9 @@
 #version 430
 #define PI 3.1415926538
+layout(binding = 0) uniform sampler2D fbo_tex; 
+
 layout(location = 1) uniform float time;
+layout(location = 2) uniform int pass;
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -24,14 +27,40 @@ vec4 Ls = vec4(1.0f); // Specular light color
 
 in VertexData
 {
+   vec2 tex_coord;
    vec3 pw; //world-space vertex position
    vec3 nw; //world-space normal vector
 } inData; //block is named 'inData'
 
+
 out vec4 fragcolor; //the output color for this fragment    
+
+mat3 sx = mat3( 
+    1.0, 2.0, 1.0, 
+    0.0, 0.0, 0.0, 
+   -1.0, -2.0, -1.0 
+);
+mat3 sy = mat3( 
+    1.0, 0.0, -1.0, 
+    2.0, 0.0, -2.0, 
+    1.0, 0.0, -1.0 
+);
+
+vec4 blur();
+vec4 outline();
+vec4 celshading();
+
 
 void main(void)
 {   
+    fragcolor = celshading();
+    if (pass == 1) {
+        // colored outline: fragcolor*outline()
+        fragcolor = outline() * blur();
+    }
+}
+
+vec4 celshading() {
     // Compute Cook-Torrance Lighting
     const float eps = 1e-8; //small value to avoid division by 0
 
@@ -59,5 +88,53 @@ void main(void)
         // highlights
         fragcolor = La * ka * 1.5;
     }
+    
+    return fragcolor;
 
+}
+
+
+vec4 blur()
+{      
+   // blur intensity 
+   int hw = 20;
+   float n=0.0;
+   vec4 blur = vec4(0.0);
+   for(int i=-hw; i<=hw; i++)
+   {
+      for(int j=-hw; j<=hw; j++)
+      {
+         blur += texelFetch(fbo_tex, ivec2(gl_FragCoord)+ivec2(i,j), 0);
+         n+=1.0;
+      }
+   }
+   blur = blur/n;
+   return blur;
+}
+
+
+vec4 outline() {
+    // add outlines
+
+    // texture function is normalized [0,1] texture coordinates
+    vec3 diffuse = texture(fbo_tex, inData.tex_coord.st).rgb;
+    mat3 I;
+    // converting image to greyscale
+    for (int i=0; i<3; i++) {
+        for (int j=0; j<3; j++) {
+            // unnormalized texture coordinates
+            vec3 s = texelFetch(fbo_tex, ivec2(gl_FragCoord) + ivec2(i-1 ,j-1), 0).rgb;
+            I[i][j] = length(s); 
+        }
+    }
+
+    // applying convolution filter to get gradient in x and y
+    float gx = dot(sx[0], I[0]) + dot(sx[1], I[1]) + dot(sx[2], I[2]); 
+    float gy = dot(sy[0], I[0]) + dot(sy[1], I[1]) + dot(sy[2], I[2]);
+    // turn edge orientation to flat line (length of gradient)
+    float g = sqrt(pow(gx, 2.0) + pow(gy, 2.0)); // with light outline
+
+    // black outline 
+    float thickened = clamp(g* 10.0, 0.0, 1.0); // will either have 0 or 1
+    return 1 - vec4(vec3(thickened), 0.0);
 }

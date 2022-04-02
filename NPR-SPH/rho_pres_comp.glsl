@@ -1,7 +1,7 @@
 #version 440
 
-#define WORK_GROUP_SIZE 128
-#define NUM_PARTICLES 256
+#define WORK_GROUP_SIZE 1024
+#define NUM_PARTICLES 10000
 
 // For calculations
 #define PI 3.141592741f
@@ -37,6 +37,7 @@ void main()
     
     particles[i].rho = 3.0f;
     particles[i].pres = 7.0f;
+    particles[i].age = 5.0f;
 }
 
 /*layout(local_size_x = 1024) in;

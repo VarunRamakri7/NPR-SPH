@@ -1,7 +1,7 @@
 #version 440
 
-#define WORK_GROUP_SIZE 128
-#define NUM_PARTICLES 256
+#define WORK_GROUP_SIZE 1024
+#define NUM_PARTICLES 10000
 
 // For calculations
 #define TIME_STEP 0.01f
@@ -34,5 +34,5 @@ void main()
 
     particles[i].vel.xyz += particles[i].force.xyz * TIME_STEP;
     particles[i].pos.xyz += particles[i].vel.xyz * TIME_STEP;
-
+    particles[i].pos.w = 1.0f;
 }

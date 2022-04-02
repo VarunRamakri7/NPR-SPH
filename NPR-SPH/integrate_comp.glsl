@@ -77,5 +77,5 @@ void main()
     
     // Placeholder
     //particles[i].vel.xyz += particles[i].force.xyz * TIME_STEP;
-    //particles[i].pos.y += -0.00981f;
+    particles[i].pos.y += -0.00981f;
 }

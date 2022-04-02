@@ -12,7 +12,7 @@
 #define PARTICLE_VISCOSITY 3000.0f
 #define GRAVITY_FORCE vec3(0.0, -9806.649f, 0.0f)
 
-layout (local_size_x = WORK_GROUP_SIZE) in;
+layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(location = 1) uniform float time;
 
@@ -36,7 +36,7 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
 
-    // Compute all forces
+    /*// Compute all forces
     vec3 pres_force = vec3(0.0f);
     vec3 visc_force = vec3(0.0f);
     
@@ -62,8 +62,8 @@ void main()
     vec3 external_force = particles[i].rho * GRAVITY_FORCE;
 
     particles[i].force.xyz = pres_force + visc_force + external_force;
-
-    /* // Placeholder
-    particles[i].force += vec4(0.0f);
     */
+
+    // Placeholder
+    particles[i].force += vec4(0.0f);
 }

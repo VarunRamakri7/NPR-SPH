@@ -11,7 +11,7 @@
 #define SMOOTHING_LENGTH (4 * PARTICLE_RADIUS)
 #define PARTICLE_STIFFNESS 2000
 
-layout (local_size_x = WORK_GROUP_SIZE) in;
+layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(location = 1) uniform float time;
 
@@ -35,6 +35,7 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
     
+    /*
     // Compute Density (rho)
     float rho = 0.0f;
 
@@ -52,9 +53,10 @@ void main()
     
     // Compute Pressure
     particles[i].pres = max(PARTICLE_STIFFNESS * (rho - PARTICLE_RESTING_DENSITY), 0.0f);
+    */
 
-    /* // Placeholders
+    // Placeholders
     particles[i].rho = 3.0f;
     particles[i].pres = 7.0f;
-    particles[i].age = 5.0f;*/
+    particles[i].age = 5.0f;
 }

@@ -26,7 +26,7 @@
 #include "UniformGui.h"
 
 #define SPH_NUM_PARTICLES 1000
-#define SPH_PARTICLE_RADIUS 0.5f
+#define SPH_PARTICLE_RADIUS 0.2f
 #define SPH_WORK_GROUP_SIZE 256
 #define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
 
@@ -45,10 +45,10 @@ GLuint compute_programs[3] = { -1, -1, -1 };
 GLuint particle_position_vao = -1;
 GLuint particles_ssbo = -1;
 
-glm::vec3 eye = glm::vec3(-5.2f, 2.0f, -5.0f);
-glm::vec3 center = glm::vec3(0.0f, 2.0f, 0.0f);
+glm::vec3 eye = glm::vec3(-4.0f, 5.0f, -4.0f);
+glm::vec3 center = glm::vec3(0.0f);
 float angle = 0.0f;
-float scale = 0.75f;
+float scale = 1.75f;
 float aspect = 1.0f;
 bool recording = false;
 
@@ -159,7 +159,7 @@ void display(GLFWwindow* window)
     glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
     // Use compute shader
-    glUseProgram(compute_programs[0]);
+    /*glUseProgram(compute_programs[0]);
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     glUseProgram(compute_programs[1]);
@@ -167,7 +167,7 @@ void display(GLFWwindow* window)
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     glUseProgram(compute_programs[2]);
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
 
     //glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
     //Particle* p = (Particle*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
@@ -290,17 +290,18 @@ std::vector<glm::vec4> make_grid()
 {
     std::vector<glm::vec4> positions;
 
-    // 10x10x10 Cube of particles
+    // 10x10x10 Cube of particles within [-1, 1] on all axes
     for (int i = 0; i < 10; i++)
     {
         for (int j = 0; j < 10; j++)
         {
             for (int k = 0; k < 10; k++)
             {
-                positions.push_back(glm::vec4((float)i * SPH_PARTICLE_RADIUS, (float)j * SPH_PARTICLE_RADIUS, (float)k * SPH_PARTICLE_RADIUS, 1.0f));
+                positions.push_back(glm::vec4(-1.0f + (float)i * SPH_PARTICLE_RADIUS, -1.0f + (float)j * SPH_PARTICLE_RADIUS, -1.0f + (float)k * SPH_PARTICLE_RADIUS, 1.0f));
             }
         }
     }
+    std::cout << "Position count: " << positions.size() << std::endl;
 
     return positions;
 }
@@ -343,6 +344,7 @@ void initOpenGL()
         particles[i].pres = 0.0f;
         particles[i].age = 1.0f;
     }
+    std::cout << "Particles count: " << particles.size() << std::endl;
 
     glGenBuffers(1, &particles_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);

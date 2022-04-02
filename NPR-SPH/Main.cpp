@@ -30,8 +30,8 @@
 #define SPH_WORK_GROUP_SIZE 256
 #define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
 
-const int init_window_width = 1024;
-const int init_window_height = 1024;
+const int init_window_width = 1920;
+const int init_window_height = 1920;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 static const std::string vertex_shader("npr-sph_vs.glsl");
@@ -45,10 +45,10 @@ GLuint compute_programs[3] = { -1, -1, -1 };
 GLuint particle_position_vao = -1;
 GLuint particles_ssbo = -1;
 
-glm::vec3 eye = glm::vec3(-4.0f, 5.0f, -4.0f);
+glm::vec3 eye = glm::vec3(0.0f, 3.0f, -4.0f);
 glm::vec3 center = glm::vec3(0.0f);
-float angle = 0.0f;
-float scale = 1.75f;
+float angle = 0.75f;
+float scale = 1.0f;
 float aspect = 1.0f;
 bool recording = false;
 
@@ -159,15 +159,15 @@ void display(GLFWwindow* window)
     glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
     // Use compute shader
-    /*glUseProgram(compute_programs[0]);
+    /*glUseProgram(compute_programs[0]); // Use density and pressure calculation program
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    glUseProgram(compute_programs[1]);
-    glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    glUseProgram(compute_programs[2]);
+    glUseProgram(compute_programs[1]); // Use force calculation program
     glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
+    glUseProgram(compute_programs[2]); // Use integration calculation program
+    glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     //glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
     //Particle* p = (Particle*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
@@ -301,7 +301,7 @@ std::vector<glm::vec4> make_grid()
             }
         }
     }
-    std::cout << "Position count: " << positions.size() << std::endl;
+    //std::cout << "Position count: " << positions.size() << std::endl;
 
     return positions;
 }
@@ -344,7 +344,7 @@ void initOpenGL()
         particles[i].pres = 0.0f;
         particles[i].age = 1.0f;
     }
-    std::cout << "Particles count: " << particles.size() << std::endl;
+    //std::cout << "Particles count: " << particles.size() << std::endl;
 
     glGenBuffers(1, &particles_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);

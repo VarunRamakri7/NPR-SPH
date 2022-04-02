@@ -25,9 +25,9 @@
 #include "DebugCallback.h"
 #include "UniformGui.h"
 
-#define SPH_NUM_PARTICLES 256
+#define SPH_NUM_PARTICLES 10000
 #define SPH_PARTICLE_RADIUS 0.005f
-#define SPH_WORK_GROUP_SIZE 128
+#define SPH_WORK_GROUP_SIZE 1024
 #define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
 #define PARTICLE_SPACING 2.5f
 
@@ -37,18 +37,19 @@ const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 static const std::string vertex_shader("npr-sph_vs.glsl");
 static const std::string fragment_shader("npr-sph_fs.glsl");
+static const std::string rho_pres_com_shader("rho_pres_comp.glsl");
 static const std::string force_comp_shader("force_comp.glsl");
 static const std::string integrate_comp_shader("integrate_comp.glsl");
-static const std::string rho_pres_com_shader("rho_pres_comp.glsl");
 
 GLuint shader_program = -1;
 GLuint compute_programs[3] = { -1, -1, -1 };
 GLuint particle_position_vao = -1;
 GLuint particles_ssbo = -1;
 
-glm::vec3 eye = glm::vec3(0.0f, PARTICLE_SPACING, 5.0f);
+glm::vec3 eye = glm::vec3(3.25f, 0.0f, -9.0f);
+glm::vec3 center = glm::vec3(3.25f, 1.0f, 0.0f);
 float angle = 0.0f;
-float scale = 0.4f;
+float scale = 0.175f;
 float aspect = 1.0f;
 bool recording = false;
 
@@ -126,6 +127,7 @@ void draw_gui(GLFWwindow* window)
     ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
     ImGui::SliderFloat("Scale", &scale, 0.0001f, 2.0f);
     ImGui::SliderFloat3("Camera Eye", &eye[0], -10.0f, 10.0f);
+    ImGui::SliderFloat3("Camera Center", &center[0], -10.0f, 10.0f);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
@@ -146,7 +148,7 @@ void display(GLFWwindow* window)
 
     SceneData.eye_w = glm::vec4(eye, 1.0f);
     glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(scale));
-    glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w), center, glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 P = glm::perspective(glm::pi<float>() / 4.0f, 1.0f, 0.1f, 100.0f);
     SceneData.PV = P * V;
 
@@ -289,11 +291,11 @@ std::vector<glm::vec4> make_grid()
 {
     std::vector<glm::vec4> positions;
 
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < 100; i++)
     {
-        for (int j = 0; j < 4; j++)
+        for (int j = 0; j < 10; j++)
         {
-            for (int k = 0; k < 4; k++)
+            for (int k = 0; k < 10; k++)
             {
                 positions.push_back(glm::vec4((float)i * PARTICLE_SPACING, (float)j * PARTICLE_SPACING, (float)k * PARTICLE_SPACING, 1.0f));
             }

@@ -9,7 +9,7 @@ layout(std140, binding = 0) uniform SceneUniforms
    vec4 eye_w;	//world-space eye position
 };
 
-layout (location = 2) in vec4 position;
+in vec3 position;
 
 out gl_PerVertex
 {
@@ -19,6 +19,6 @@ out gl_PerVertex
 
 void main ()
 {
-    gl_Position = PV * M * position;
+    gl_Position = PV * M * vec4(position, 1.0f);
     gl_PointSize = 10.0f;
 }

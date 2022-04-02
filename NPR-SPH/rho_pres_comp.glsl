@@ -1,7 +1,7 @@
 #version 440
 
 #define WORK_GROUP_SIZE 1024
-#define NUM_PARTICLES 10000
+#define NUM_PARTICLES 1000
 
 // For calculations
 #define PI 3.141592741f
@@ -35,34 +35,26 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
     
+    // Compute Density (rho)
+    float rho = 0.0f;
+
+    // Iterate through all particles
+    for (int j = 0; j < NUM_PARTICLES; j++)
+    {
+        vec3 delta = particles[i].pos.xyz - particles[j].pos.xyz;
+        float r = length(delta);
+        if (r < SMOOTHING_LENGTH)
+        {
+            rho += PARTICLE_MASS * 315.0f * pow(SMOOTHING_LENGTH * SMOOTHING_LENGTH - r * r, 3) / (64.0f * PI * pow(SMOOTHING_LENGTH, 9));
+        }
+    }
+    particles[i].rho = rho; // Assign computed value
+    
+    // Compute Pressure
+    particles[i].pres = max(PARTICLE_STIFFNESS * (rho - PARTICLE_RESTING_DENSITY), 0.0f);
+
+    /* // Placeholders
     particles[i].rho = 3.0f;
     particles[i].pres = 7.0f;
-    particles[i].age = 5.0f;
+    particles[i].age = 5.0f;*/
 }
-
-/*layout(local_size_x = 1024) in;
-
-struct Particle
-{
-    vec4 pos;
-    vec4 vel;
-};
-
-layout(std430, binding=0) buffer PARTICLES
-{
-    Particle particles[];
-};
-
-uniform int num_particles = 10000;
-uniform float dt = 0.001;
-
-void main()
-{
-    uint gid = gl_GlobalInvocationID.x;
-    if(gid >= num_particles) return;
-
-    vec4 pos = particles[gid].pos;
-    vec4 vel = particles[gid].vel;
-    pos.xyz += dt*vel.xyz;
-    particles[gid].pos = pos;
-}*/

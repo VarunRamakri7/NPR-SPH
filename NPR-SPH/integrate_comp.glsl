@@ -1,7 +1,7 @@
 #version 440
 
 #define WORK_GROUP_SIZE 1024
-#define NUM_PARTICLES 10000
+#define NUM_PARTICLES 1000
 
 // For calculations
 #define TIME_STEP 0.01f
@@ -32,7 +32,50 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
 
+    // Integrate all components
+    vec3 acceleration = particles[i].force.xyz / particles[i].rho;
+    vec3 new_vel = particles[i].vel.xyz + TIME_STEP * acceleration;
+    vec3 new_pos = particles[i].pos.xyz + TIME_STEP * new_vel;
+
+    // Boundary conditions. Keep particlex within [-1, 1] in all axis
+    if (new_pos.x < -1)
+    {
+        new_pos.x = -1;
+        new_vel.x *= -1 * WALL_DAMPING;
+    }
+    else if (new_pos.x > 1)
+    {
+        new_pos.x = 1;
+        new_vel.x *= -1 * WALL_DAMPING;
+    }
+    else if (new_pos.y < -1)
+    {
+        new_pos.y = -1;
+        new_vel.y *= -1 * WALL_DAMPING;
+    }
+    else if (new_pos.y > 1)
+    {
+        new_pos.y = 1;
+        new_vel.y *= -1 * WALL_DAMPING;
+    }
+    else if (new_pos.z < -1)
+    {
+        new_pos.z = -1;
+        new_pos.z *= -1 * WALL_DAMPING;
+    }
+    else if (new_pos.z > 1)
+    {
+        new_pos.z = 1;
+        new_pos.z *= -1 * WALL_DAMPING;
+    }
+
+    // Assign calculated values
+    particles[i].vel.xyz = new_vel;
+    particles[i].pos.xyz = new_pos;
+    
+    /*// Placeholder
     particles[i].vel.xyz += particles[i].force.xyz * TIME_STEP;
     particles[i].pos.xyz += particles[i].vel.xyz * TIME_STEP;
-    particles[i].pos.w = 1.0f;
+    //particles[i].pos.w = 1.0f;
+    */
 }

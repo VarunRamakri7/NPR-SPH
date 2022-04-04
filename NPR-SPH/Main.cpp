@@ -160,12 +160,12 @@ void display(GLFWwindow* window)
     // Use compute shader
     if (simulate)
     {
-        /*glUseProgram(compute_programs[0]); // Use density and pressure calculation program
+        glUseProgram(compute_programs[0]); // Use density and pressure calculation program
         glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         glUseProgram(compute_programs[1]); // Use force calculation program
         glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         glUseProgram(compute_programs[2]); // Use integration calculation program
         glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);

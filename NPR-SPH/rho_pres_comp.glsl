@@ -21,9 +21,6 @@ struct Particle
     vec4 vel;
     vec4 force;
     vec4 extras; // 0 - rho, 1 - pressure, 2 - age
-    //float rho;
-    //float pres;
-    //float age;
 };
 
 layout(std430, binding = 0) buffer PARTICLES
@@ -36,7 +33,6 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
     
-    /*
     // Compute Density (rho)
     float rho = 0.0f;
 
@@ -50,14 +46,13 @@ void main()
             rho += PARTICLE_MASS * 315.0f * pow(SMOOTHING_LENGTH * SMOOTHING_LENGTH - r * r, 3) / (64.0f * PI * pow(SMOOTHING_LENGTH, 9));
         }
     }
-    particles[i].rho = rho; // Assign computed value
+    particles[i].extras[0] = rho; // Assign computed value
     
     // Compute Pressure
-    particles[i].pres = max(PARTICLE_STIFFNESS * (rho - PARTICLE_RESTING_DENSITY), 0.0f);
-    */
+    particles[i].extras[1] = max(PARTICLE_STIFFNESS * (rho - PARTICLE_RESTING_DENSITY), 0.0f);
 
     // Placeholders
-    particles[i].rho = 3.0f;
-    particles[i].pres = 7.0f;
-    particles[i].age = 5.0f;
+    //particles[i].rho = 3.0f;
+    //particles[i].pres = 7.0f;
+    //particles[i].age = 5.0f;
 }

@@ -22,9 +22,6 @@ struct Particle
     vec4 vel;
     vec4 force;
     vec4 extras; // 0 - rho, 1 - pressure, 2 - age
-    //float rho;
-    //float pres;
-    //float age;
 };
 
 layout(std430, binding = 0) buffer PARTICLES
@@ -37,7 +34,7 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
 
-    /*// Compute all forces
+    // Compute all forces
     vec3 pres_force = vec3(0.0f);
     vec3 visc_force = vec3(0.0f);
     
@@ -52,19 +49,18 @@ void main()
         float r = length(delta);
         if (r < SMOOTHING_LENGTH)
         {
-            pres_force -= PARTICLE_MASS * (particles[i].force.xyz + particles[j].force.xyz) / (2.0f * particles[j].rho) *
+            pres_force -= PARTICLE_MASS * (particles[i].force.xyz + particles[j].force.xyz) / (2.0f * particles[j].extras[0]) *
                         -45.0f / (PI * pow(SMOOTHING_LENGTH, 6)) * pow(SMOOTHING_LENGTH - r, 2) * normalize(delta); // Gradient of spiky kernel
-            visc_force += PARTICLE_MASS * (particles[j].vel.xyz - particles[i].vel.xyz) / particles[j].rho *
+            visc_force += PARTICLE_MASS * (particles[j].vel.xyz - particles[i].vel.xyz) / particles[j].extras[0] *
                         45.0f / (PI * pow(SMOOTHING_LENGTH, 6)) * (SMOOTHING_LENGTH - r); // Laplacian of viscosity kernel
         }
     }
     visc_force *= PARTICLE_VISCOSITY;
 
-    vec3 external_force = particles[i].rho * GRAVITY_FORCE;
+    vec3 external_force = particles[i].extras[0] * GRAVITY_FORCE;
 
     particles[i].force.xyz = pres_force + visc_force + external_force;
-    */
 
     // Placeholder
-    particles[i].force += vec4(0.0f);
+    //particles[i].force += vec4(0.0f);
 }

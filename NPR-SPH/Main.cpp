@@ -58,9 +58,6 @@ struct Particle
     glm::vec4 vel;
     glm::vec4 force;
     glm::vec4 extras; // 0 - rho, 1 - pressure, 2 - age
-    //float rho;;
-    //float pres;
-    //float age;
 };
 
 //This structure mirrors the uniform block declared in the shader
@@ -346,9 +343,6 @@ void initOpenGL()
         particles[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); // Constant velocity along Y-Axis
         particles[i].force = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Gravity along the Y-Axis
         particles[i].extras = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f); // 0 - rho, 1 - pressure, 2 - age
-        //particles[i].rho = 0.0f;
-        //particles[i].pres = 0.0f;
-        //particles[i].age = 1.0f;
     }
     //std::cout << "Particles count: " << particles.size() << std::endl;
 

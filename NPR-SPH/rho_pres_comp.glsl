@@ -1,11 +1,11 @@
 #version 440
 
 #define WORK_GROUP_SIZE 1024
-#define NUM_PARTICLES 1000
+#define NUM_PARTICLES 8000
 
 // For calculations
 #define PI 3.141592741f
-#define PARTICLE_RADIUS 0.005f
+#define PARTICLE_RADIUS 0.0005f
 #define PARTICLE_RESTING_DENSITY 1000
 #define PARTICLE_MASS 0.02 // Mass = Density * Volume
 #define SMOOTHING_LENGTH (4 * PARTICLE_RADIUS)

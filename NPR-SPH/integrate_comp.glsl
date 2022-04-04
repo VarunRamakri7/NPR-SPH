@@ -1,7 +1,7 @@
 #version 440
 
 #define WORK_GROUP_SIZE 1024
-#define NUM_PARTICLES 1000
+#define NUM_PARTICLES 8000
 
 // For calculations
 #define TIME_STEP 0.0001f
@@ -39,17 +39,17 @@ void main()
     new_pos.y = particles[i].pos.y - 0.00981f;
 
     // Boundary conditions. Keep particlex within [-1, 1] in all axis
-    if (new_pos.x < -1.2f)
+    /*if (new_pos.x < -1.2f)
     {
         new_pos.x = -1.0f;
-        //new_vel.x *= -1.0f * WALL_DAMPING;
+        new_vel.x *= -1.0f * WALL_DAMPING;
     }
     else if (new_pos.x > 1.2f)
     {
         new_pos.x = 1.0f;
-        //new_vel.x *= -1.0f * WALL_DAMPING;
+        new_vel.x *= -1.0f * WALL_DAMPING;
     }
-    else if (new_pos.y < -1.2f)
+    else */if (new_pos.y < -1.2f)
     {
         new_pos.y = 1.0f;
         //new_pos.y = -1.0f;
@@ -61,7 +61,7 @@ void main()
         //new_pos.y = 1.0f;
         //new_vel.y *= -1.0f * WALL_DAMPING;
     }
-    else if (new_pos.z < -1.2f)
+    /*else if (new_pos.z < -1.2f)
     {
         new_pos.z = -1.0f;
         new_pos.z *= -1.0f * WALL_DAMPING;
@@ -70,7 +70,7 @@ void main()
     {
         new_pos.z = 1.0f;
         new_pos.z *= -1.0f * WALL_DAMPING;
-    }
+    }*/
 
     // Assign calculated values
     //particles[i].vel.xyz = new_vel;
@@ -78,5 +78,5 @@ void main()
         
     // Placeholder
     //particles[i].vel.xyz += particles[i].force.xyz * TIME_STEP;
-    //particles[i].pos.y += -0.00981f;
+    //particles[i].pos.y -= 0.00981f;
 }

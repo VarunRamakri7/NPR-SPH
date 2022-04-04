@@ -25,8 +25,8 @@
 #include "DebugCallback.h"
 #include "UniformGui.h"
 
-#define NUM_PARTICLES 1000
-#define PARTICLE_RADIUS 0.2f
+#define NUM_PARTICLES 8000
+#define PARTICLE_RADIUS 0.05f
 #define WORK_GROUP_SIZE 1024
 #define NUM_WORK_GROUPS 10 // Ceiling of particle count divided by work group size
 
@@ -45,12 +45,13 @@ GLuint compute_programs[3] = { -1, -1, -1 };
 GLuint particle_position_vao = -1;
 GLuint particles_ssbo = -1;
 
-glm::vec3 eye = glm::vec3(0.0f, 3.0f, -4.0f);
+glm::vec3 eye = glm::vec3(10.0f, 5.0f, 0.0f);
 glm::vec3 center = glm::vec3(0.0f);
 float angle = 0.75f;
-float scale = 1.0f;
+float scale = 6.0f;
 float aspect = 1.0f;
 bool recording = false;
+bool simulate = false;
 
 struct Particle
 {
@@ -122,7 +123,7 @@ void draw_gui(GLFWwindow* window)
     }
 
     ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
-    ImGui::SliderFloat("Scale", &scale, 0.0001f, 2.0f);
+    ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);
     ImGui::SliderFloat3("Camera Eye", &eye[0], -10.0f, 10.0f);
     ImGui::SliderFloat3("Camera Center", &center[0], -10.0f, 10.0f);
 
@@ -157,15 +158,18 @@ void display(GLFWwindow* window)
     glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
     // Use compute shader
-    /*glUseProgram(compute_programs[0]); // Use density and pressure calculation program
-    glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    glUseProgram(compute_programs[1]); // Use force calculation program
-    glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
-    glUseProgram(compute_programs[2]); // Use integration calculation program
-    glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    if (simulate)
+    {
+        /*glUseProgram(compute_programs[0]); // Use density and pressure calculation program
+        glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        glUseProgram(compute_programs[1]); // Use force calculation program
+        glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
+        glUseProgram(compute_programs[2]); // Use integration calculation program
+        glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    }
 
     //glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
     //Particle* p = (Particle*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
@@ -255,6 +259,11 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
             reload_shader();
             break;
 
+        case 'p':
+        case 'P':
+            simulate = !simulate;
+            break;
+
         case GLFW_KEY_ESCAPE:
             glfwSetWindowShouldClose(window, GLFW_TRUE);
             break;
@@ -289,11 +298,11 @@ std::vector<glm::vec4> make_grid()
     std::vector<glm::vec4> positions;
 
     // 10x10x10 Cube of particles within [-1, 1] on all axes
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 20; i++)
     {
-        for (int j = 0; j < 10; j++)
+        for (int j = 0; j < 20; j++)
         {
-            for (int k = 0; k < 10; k++)
+            for (int k = 0; k < 20; k++)
             {
                 positions.push_back(glm::vec4(-1.0f + (float)i * PARTICLE_RADIUS, -1.0f + (float)j * PARTICLE_RADIUS, -1.0f + (float)k * PARTICLE_RADIUS, 1.0f));
             }

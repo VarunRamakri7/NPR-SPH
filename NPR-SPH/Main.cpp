@@ -25,10 +25,10 @@
 #include "DebugCallback.h"
 #include "UniformGui.h"
 
-#define SPH_NUM_PARTICLES 1000
-#define SPH_PARTICLE_RADIUS 0.2f
-#define SPH_WORK_GROUP_SIZE 256
-#define SPH_NUM_WORK_GROUPS ((SPH_NUM_PARTICLES + SPH_WORK_GROUP_SIZE - 1) / SPH_WORK_GROUP_SIZE) // Ceiling of particle count divided by work group size
+#define NUM_PARTICLES 1000
+#define PARTICLE_RADIUS 0.2f
+#define WORK_GROUP_SIZE 1024
+#define NUM_WORK_GROUPS 10 // Ceiling of particle count divided by work group size
 
 const int init_window_width = 1920;
 const int init_window_height = 1920;
@@ -160,13 +160,13 @@ void display(GLFWwindow* window)
 
     // Use compute shader
     /*glUseProgram(compute_programs[0]); // Use density and pressure calculation program
-    glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
+    glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     glUseProgram(compute_programs[1]); // Use force calculation program
-    glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
+    glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
     glUseProgram(compute_programs[2]); // Use integration calculation program
-    glDispatchCompute(SPH_NUM_WORK_GROUPS, 1, 1);
+    glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     //glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
@@ -174,7 +174,7 @@ void display(GLFWwindow* window)
     //glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
     glUseProgram(shader_program);
-    glDrawArrays(GL_POINTS, 0, SPH_NUM_PARTICLES);
+    glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
 
     if (recording == true)
     {
@@ -297,7 +297,7 @@ std::vector<glm::vec4> make_grid()
         {
             for (int k = 0; k < 10; k++)
             {
-                positions.push_back(glm::vec4(-1.0f + (float)i * SPH_PARTICLE_RADIUS, -1.0f + (float)j * SPH_PARTICLE_RADIUS, -1.0f + (float)k * SPH_PARTICLE_RADIUS, 1.0f));
+                positions.push_back(glm::vec4(-1.0f + (float)i * PARTICLE_RADIUS, -1.0f + (float)j * PARTICLE_RADIUS, -1.0f + (float)k * PARTICLE_RADIUS, 1.0f));
             }
         }
     }
@@ -333,9 +333,9 @@ void initOpenGL()
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     // Initialize particle data
-    std::vector<Particle> particles(SPH_NUM_PARTICLES);
+    std::vector<Particle> particles(NUM_PARTICLES);
     std::vector<glm::vec4> grid_positions = make_grid(); // Get grid positions
-    for (int i = 0; i < SPH_NUM_PARTICLES; i++)
+    for (int i = 0; i < NUM_PARTICLES; i++)
     {
         particles[i].pos = grid_positions[i];
         particles[i].vel = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); // Constant velocity along Y-Axis
@@ -348,7 +348,7 @@ void initOpenGL()
 
     glGenBuffers(1, &particles_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * SPH_NUM_PARTICLES, particles.data(), GL_STREAM_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * NUM_PARTICLES, particles.data(), GL_STREAM_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_ssbo);
 
     glGenVertexArrays(1, &particle_position_vao);

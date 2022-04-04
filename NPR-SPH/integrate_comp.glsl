@@ -1,6 +1,6 @@
 #version 440
 
-#define WORK_GROUP_SIZE 256
+#define WORK_GROUP_SIZE 1024
 #define NUM_PARTICLES 1000
 
 // For calculations

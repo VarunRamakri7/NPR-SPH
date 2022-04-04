@@ -21,9 +21,10 @@ struct Particle
     vec4 pos;
     vec4 vel;
     vec4 force;
-    float rho;
-    float pres;
-    float age;
+    vec4 extras; // 0 - rho, 1 - pressure, 2 - age
+    //float rho;
+    //float pres;
+    //float age;
 };
 
 layout(std430, binding = 0) buffer PARTICLES

@@ -8,8 +8,8 @@
 #define PARTICLE_RADIUS 0.0005f
 #define PARTICLE_RESTING_DENSITY 1000
 #define PARTICLE_MASS 0.02 // Mass = Density * Volume
-#define SMOOTHING_LENGTH (4 * PARTICLE_RADIUS)
-#define PARTICLE_VISCOSITY 3000.0f
+#define SMOOTHING_LENGTH (1.0f * PARTICLE_RADIUS)
+#define PARTICLE_VISCOSITY 2000.0f
 #define GRAVITY_FORCE vec3(0.0, -9806.649f, 0.0f)
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;

@@ -317,11 +317,15 @@ void initOpenGL()
     RegisterCallback();
 #endif
 
+    int max_work_groups = -1;
+    glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &max_work_groups);
+
     //Print out information about the OpenGL version supported by the graphics driver.	
     std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
     std::cout << "Version: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+    std::cout << "Max work group invocations: " << max_work_groups << std::endl;
     glEnable(GL_DEPTH_TEST);
 
     //Enable alpha blending

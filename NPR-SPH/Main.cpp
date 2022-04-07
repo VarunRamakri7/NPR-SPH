@@ -26,12 +26,12 @@
 #include "UniformGui.h"
 
 #define NUM_PARTICLES 8000
-#define PARTICLE_RADIUS 0.05f
+#define PARTICLE_RADIUS 0.1f
 #define WORK_GROUP_SIZE 1024
 #define NUM_WORK_GROUPS 10 // Ceiling of particle count divided by work group size
 
-const int init_window_width = 1920;
-const int init_window_height = 1920;
+const int init_window_width = 1080;
+const int init_window_height = 1080;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 static const std::string vertex_shader("npr-sph_vs.glsl");
@@ -48,7 +48,7 @@ GLuint particles_ssbo = -1;
 glm::vec3 eye = glm::vec3(10.0f, 5.0f, 0.0f);
 glm::vec3 center = glm::vec3(0.0f);
 float angle = 0.75f;
-float scale = 6.0f;
+float scale = 2.5f;
 float aspect = 1.0f;
 bool recording = false;
 bool simulate = false;

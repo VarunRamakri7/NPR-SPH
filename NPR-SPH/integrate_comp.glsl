@@ -35,8 +35,8 @@ void main()
     vec3 new_vel = particles[i].vel.xyz + TIME_STEP * acceleration;
     vec3 new_pos = particles[i].pos.xyz + TIME_STEP * new_vel;
 
-    /*vec3 new_pos = particles[i].pos.xyz;
-    new_pos.y = particles[i].pos.y - 0.00981f;*/
+    //vec3 new_pos = particles[i].pos.xyz;
+    //new_pos.y = particles[i].pos.y - 0.00981f;
 
     // Boundary conditions. Keep particlex within [-1, 1] in all axis
     if (new_pos.x < -1.1f)

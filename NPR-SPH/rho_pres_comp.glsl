@@ -5,11 +5,11 @@
 
 // For calculations
 #define PI 3.141592741f
-#define PARTICLE_RADIUS 0.0005f
+#define PARTICLE_RADIUS 0.1f
 #define PARTICLE_RESTING_DENSITY 1000
-#define PARTICLE_MASS 0.02 // Mass = Density * Volume
-#define SMOOTHING_LENGTH (1.0f * PARTICLE_RADIUS)
-#define PARTICLE_STIFFNESS 0.1f
+#define PARTICLE_MASS 1000.0f // Mass = Density * Volume
+#define SMOOTHING_LENGTH (5.0f * PARTICLE_RADIUS)
+#define PARTICLE_STIFFNESS 2000
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -39,9 +39,9 @@ void main()
     // Iterate through all particles
     for (int j = 0; j < NUM_PARTICLES; j++)
     {
-        vec3 delta = particles[i].pos.xyz - particles[j].pos.xyz;
-        float r = length(delta);
-        if (r < SMOOTHING_LENGTH)
+        vec3 delta = particles[i].pos.xyz - particles[j].pos.xyz; // Get vector between current particle and particle in vicinity
+        float r = length(delta); // Get length of the vector
+        if (r < SMOOTHING_LENGTH) // Check if particle is inside smoothing radius
         {
             rho += PARTICLE_MASS * 315.0f * pow(SMOOTHING_LENGTH * SMOOTHING_LENGTH - r * r, 3) / (64.0f * PI * pow(SMOOTHING_LENGTH, 9));
         }

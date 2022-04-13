@@ -5,7 +5,7 @@
 
 // For calculations
 #define TIME_STEP 1e-5f
-#define WALL_DAMPING 0.03f
+#define WALL_DAMPING 5.0f
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -31,7 +31,7 @@ void main()
     if(i >= NUM_PARTICLES) return;
 
     // Integrate all components
-    vec3 acceleration = particles[i].force.xyz / particles[i].extras.x;
+    vec3 acceleration = particles[i].force.xyz / max(particles[i].extras[0], 0.0001f);
     vec3 new_vel = particles[i].vel.xyz + TIME_STEP * acceleration;
     vec3 new_pos = particles[i].pos.xyz + TIME_STEP * new_vel;
 

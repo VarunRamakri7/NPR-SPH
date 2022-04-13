@@ -7,9 +7,9 @@
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
 #define PARTICLE_RESTING_DENSITY 1000
-#define PARTICLE_MASS 10.0f // Mass = Density * Volume
+#define PARTICLE_MASS 0.02f // Mass = Density * Volume
 #define SMOOTHING_LENGTH (4.0f * PARTICLE_RADIUS)
-#define PARTICLE_STIFFNESS 2000
+#define PARTICLE_STIFFNESS 1000
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -43,7 +43,7 @@ void main()
         float r = length(delta); // Get length of the vector
         if (r < SMOOTHING_LENGTH) // Check if particle is inside smoothing radius
         {
-            rho += PARTICLE_MASS * 315.0f * pow(SMOOTHING_LENGTH * SMOOTHING_LENGTH - r * r, 3) / max(64.0f * PI * pow(SMOOTHING_LENGTH, 9), 0.0001f);
+            rho += PARTICLE_MASS * 315.0f * pow(SMOOTHING_LENGTH * SMOOTHING_LENGTH - r * r, 3) / max((64.0f * PI * pow(SMOOTHING_LENGTH, 9)), 0.0000001f);
         }
     }
     particles[i].extras[0] = rho; // Assign computed value

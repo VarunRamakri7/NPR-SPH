@@ -29,10 +29,21 @@ GLuint shader_program = -1;
 
 static const std::string mesh_name = "Amago0.obj";
 
+GLuint fbo = -1;
+GLuint fbo_tex = -1;
+GLuint comp_tex = -1;
+GLuint depth_tex = -1;
+GLuint depthrenderbuffer;
+
+float mesh_d;
+float mesh_range;
+
+
 //This structure mirrors the uniform block declared in the shader
 struct SceneUniforms
 {
-    glm::mat4 PV;	//camera projection * view matrix
+    glm::mat4 P;	//camera projection * view matrix
+    glm::mat4 V;
     glm::vec4 eye_w;	//world-space eye position
     glm::vec4 light_w = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f); //world-space light position
 } SceneData;
@@ -61,6 +72,10 @@ namespace UniformLocs
 {
     int M = 0; //model matrix
     int time = 1;
+    int pass = 2;
+    int mode = 3; 
+    float mesh_d = 4;
+    float mesh_range = 5;
 }
 
 GLuint texture_id = -1; //Texture map for mesh
@@ -69,6 +84,7 @@ MeshData mesh_data;
 float angle = 0.0f;
 float scale = 1.0f;
 bool recording = false;
+int paint_mode = 0;
 
 //For an explanation of this program's structure see https://www.glfw.org/docs/3.3/quick.html 
 
@@ -110,9 +126,13 @@ void draw_gui(GLFWwindow* window)
             finish_encoding(); //Uses ffmpeg
         }
     }
-
+    ImGui::Image((void*)fbo_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
+    ImGui::Image((void*)comp_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
+    
     ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
     ImGui::SliderFloat("Scale", &scale, -10.0f, +10.0f);
+    ImGui::RadioButton("ToonShader", &paint_mode, 0);
+    ImGui::RadioButton("Paint", &paint_mode, 1);
 
     ImGui::SliderFloat4("Light position", &SceneData.light_w.x, -1.0f, 1.0f);
 
@@ -142,9 +162,15 @@ void display(GLFWwindow* window)
     glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(scale * mesh_data.mScaleFactor));
     glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w.x, SceneData.eye_w.y, SceneData.eye_w.z), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 P = glm::perspective(glm::pi<float>() / 4.0f, aspect, 0.1f, 100.0f);
-    SceneData.PV = P * V;
+    SceneData.P = P;
+    SceneData.V = V;
 
     glUseProgram(shader_program);
+
+    // send selected paint mode
+    glUniform1i(UniformLocs::mode, paint_mode);
+    glUniform1f(UniformLocs::mesh_d, mesh_d);
+    glUniform1f(UniformLocs::mesh_range, mesh_range);
 
     //Set uniforms
     glUniformMatrix4fv(UniformLocs::M, 1, false, glm::value_ptr(M));
@@ -157,8 +183,38 @@ void display(GLFWwindow* window)
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MaterialUniforms), &MaterialData); //Upload the new uniform values.
     //glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
+    // pass 0 
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glUniform1i(UniformLocs::pass, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
+    glDrawBuffer(GL_COLOR_ATTACHMENT0); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // draw fish into texture
     glBindVertexArray(mesh_data.mVao);
     glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+
+    // Pass 1: outline
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glUniform1i(UniformLocs::pass, 1);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
+    glBindTextureUnit(0, fbo_tex);
+    glDrawBuffer(GL_COLOR_ATTACHMENT1); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // draw fish into texture
+    glBindVertexArray(mesh_data.mVao);
+    glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // pass 2 
+    glClearColor(0.35f, 0.35f, 0.35f, 0.0f);
+    glUniform1i(UniformLocs::pass, 2);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTextureUnit(0, fbo_tex);
+    glBindTextureUnit(1, comp_tex);
+    glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     draw_gui(window);
 
@@ -194,7 +250,8 @@ void reload_shader()
     }
     else
     {
-        glClearColor(0.35f, 0.35f, 0.35f, 0.0f);
+        
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         if (shader_program != -1)
         {
@@ -260,6 +317,78 @@ void initOpenGL()
 
     reload_shader();
     mesh_data = LoadMesh(mesh_name);
+
+    // get distance between the 2 
+
+    // do we only want z ? but we will have to rotate it anyways > this is local tho 
+    mesh_d = 0.0 - mesh_data.mBbMin.z;
+    // get d = 0 - min 
+    // add d to vertex to offset everything to 0 
+    mesh_range = glm::abs(mesh_data.mBbMin.z - mesh_data.mBbMax.z);
+    // divide all by abs(min-max) 
+
+    // get biggest texture size needed, so resize wont clip textures
+    int count;
+    GLFWmonitor** monitors = glfwGetMonitors(&count);
+    GLFWmonitor* primary = glfwGetPrimaryMonitor();
+    float max_x = 0.0f;
+    float max_y = 0.0f;
+    for (int m = 0; m < count; m++) {
+        
+        const GLFWvidmode* mode = glfwGetVideoMode(monitors[m]);
+        float xscale = mode->width;
+        float yscale = mode->height;
+
+        if ((xscale * yscale) > (max_x * max_y)) {
+            // maintain aspect ratio
+            max_x = xscale;
+            max_y = yscale;
+        }
+    }
+    
+    //Create a texture object and set initial wrapping and filtering state
+    glGenTextures(1, &fbo_tex);
+    glBindTexture(GL_TEXTURE_2D, fbo_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, max_x, max_y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenTextures(1, &comp_tex);
+    glBindTexture(GL_TEXTURE_2D, comp_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, max_x, max_y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // so we can use depth 
+    /*glGenTextures(1, &depth_tex);
+    glBindTexture(GL_TEXTURE_2D, depth_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, max_x, max_y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);*/
+
+    //Create the framebuffer object
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    //http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
+    // The depth buffer
+    glGenRenderbuffers(1, &depthrenderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, max_x, max_y);
+
+    //attach the texture we just created to color attachment 1
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_tex, 0);  
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, comp_tex, 0);
+    // attach depth renderbugger to FBO
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+    //unbind the fbo
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     //Create and initialize uniform buffers
     glGenBuffers(1, &scene_ubo);

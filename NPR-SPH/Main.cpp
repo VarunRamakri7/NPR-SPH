@@ -30,8 +30,8 @@
 #define WORK_GROUP_SIZE 1024
 #define NUM_WORK_GROUPS 10 // Ceiling of particle count divided by work group size
 
-const int init_window_width = 720;
-const int init_window_height = 720;
+const int init_window_width = 1080;
+const int init_window_height = 1080;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 static const std::string vertex_shader("npr-sph_vs.glsl");

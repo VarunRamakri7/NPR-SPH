@@ -30,8 +30,8 @@
 #define WORK_GROUP_SIZE 1024
 #define NUM_WORK_GROUPS 10 // Ceiling of particle count divided by work group size
 
-const int init_window_width = 1080;
-const int init_window_height = 1080;
+const int init_window_width = 720;
+const int init_window_height = 720;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 static const std::string vertex_shader("npr-sph_vs.glsl");
@@ -349,9 +349,9 @@ void initOpenGL()
     for (int i = 0; i < NUM_PARTICLES; i++)
     {
         particles[i].pos = grid_positions[i];
-        particles[i].vel = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Constant velocity along Y-Axis
-        particles[i].force = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Gravity along the Y-Axis
-        particles[i].extras = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f); // 0 - rho, 1 - pressure, 2 - age
+        particles[i].vel = glm::vec4(0.0f); // Constant velocity along Y-Axis
+        particles[i].force = glm::vec4(0.0f); // Gravity along the Y-Axis
+        particles[i].extras = glm::vec4(0.0f); // 0 - rho, 1 - pressure, 2 - age
     }
     //std::cout << "Particles count: " << particles.size() << std::endl;
 

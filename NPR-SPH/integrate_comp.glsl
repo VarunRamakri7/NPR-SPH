@@ -39,33 +39,32 @@ void main()
     if (new_pos.x < -1.1f)
     {
         new_pos.x *= -1.0f;
-        new_vel.x *= WALL_DAMPING;
+        new_vel.x *= -WALL_DAMPING;
     }
     else if (new_pos.x > 1.1f)
     {
         new_pos.x = 1.0f;
-        new_vel.x *= WALL_DAMPING;
+        new_vel.x *= -WALL_DAMPING;
     }
     else if (new_pos.y < -1.1f)
     {
         new_pos.y = -1.0f;
-        new_vel.y *= WALL_DAMPING;
+        new_vel.y *= -WALL_DAMPING;
     }
     else if (new_pos.y > 1.1f)
     {
-        //new_pos.y = -1.0f;
         new_pos.y = 1.0f;
-        new_vel.y *= WALL_DAMPING;
+        new_vel.y *= -WALL_DAMPING;
     }
     else if (new_pos.z < -1.1f)
     {
         new_pos.z = -1.0f;
-        new_pos.z *= WALL_DAMPING;
+        new_pos.z *= -WALL_DAMPING;
     }
     else if (new_pos.z > 1.1f)
     {
         new_pos.z = 1.0f;
-        new_pos.z *= WALL_DAMPING;
+        new_pos.z *= -WALL_DAMPING;
     }
 
     // Assign calculated values

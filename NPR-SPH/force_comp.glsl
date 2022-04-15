@@ -6,10 +6,10 @@
 // For calculations
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
-#define PARTICLE_MASS 3.5f // Mass = Density * Volume
+#define PARTICLE_MASS 3.5f
 #define SMOOTHING_LENGTH (10.0f * PARTICLE_RADIUS)
 #define PARTICLE_VISCOSITY 200.0f
-#define GRAVITY_FORCE vec3(0.0, -10.0f, 0.0f)
+#define GRAVITY_FORCE vec3(0.0, -9.81f, 0.0f)
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 

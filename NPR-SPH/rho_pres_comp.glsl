@@ -6,9 +6,9 @@
 // For calculations
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
-#define PARTICLE_RESTING_DENSITY 300
-#define PARTICLE_MASS 3.5f // Mass = Density * Volume
+#define PARTICLE_MASS 3.5f
 #define SMOOTHING_LENGTH (10.0f * PARTICLE_RADIUS)
+#define PARTICLE_RESTING_DENSITY 300
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -39,7 +39,7 @@ void main()
     float rho = 0.0f;
 
     // Iterate through all particles
-    for (int j = 0; j < NUM_PARTICLES; j++)
+    for (uint j = 0; j < NUM_PARTICLES; j++)
     {
         vec3 delta = particles[i].pos.xyz - particles[j].pos.xyz; // Get vector between current particle and particle in vicinity
         float r = length(delta); // Get length of the vector

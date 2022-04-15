@@ -14,5 +14,5 @@ in vec3 position;
 void main ()
 {
     gl_Position = PV * M * vec4(position, 1.0f);
-    gl_PointSize = 10.0f;
+    gl_PointSize = 5.0f;
 }

@@ -6,11 +6,10 @@
 // For calculations
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
-#define PARTICLE_RESTING_DENSITY 1000
-#define PARTICLE_MASS 0.02f // Mass = Density * Volume
-#define SMOOTHING_LENGTH (4.0f * PARTICLE_RADIUS)
-#define PARTICLE_VISCOSITY 2000.0f
-#define GRAVITY_FORCE vec3(0.0, -9806.65f, 0.0f)
+#define PARTICLE_MASS 3.5f // Mass = Density * Volume
+#define SMOOTHING_LENGTH (10.0f * PARTICLE_RADIUS)
+#define PARTICLE_VISCOSITY 200.0f
+#define GRAVITY_FORCE vec3(0.0, -10.0f, 0.0f)
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -29,6 +28,9 @@ layout(std430, binding = 0) buffer PARTICLES
     Particle particles[];
 };
 
+const float SPIKY_GRAD = -10.0f / (PI * pow(SMOOTHING_LENGTH, 5.0f));
+const float VISC_LAP = 40.0f / (PI * pow(SMOOTHING_LENGTH, 5.0f));
+
 void main()
 {
     uint i = gl_GlobalInvocationID.x;
@@ -40,24 +42,20 @@ void main()
     
     for (uint j = 0; j < NUM_PARTICLES; j++)
     {
-        if (i != j)
+        if (i == j)
         {
-            vec3 delta = particles[i].pos.xyz - particles[j].pos.xyz; // Get vector between current particle and particle in vicinity
-            float r = length(delta); // Get length of the vector
-            if (r < SMOOTHING_LENGTH) // Check if particle is inside smoothing radius
-            {
-                pres_force -= PARTICLE_MASS * (particles[i].force.xyz + particles[j].force.xyz) / max(2.0f * particles[j].extras[0], 0.0000001f) *
-                            -45.0f / max(PI * pow(SMOOTHING_LENGTH, 6) * pow(SMOOTHING_LENGTH - r, 2), 0.0000001f) * normalize(delta); // Gradient of spiky kernel
-                visc_force += PARTICLE_MASS * (particles[j].vel.xyz - particles[i].vel.xyz) / max(particles[j].extras[0], 0.0000001f) *
-                            45.0f / max((PI * pow(SMOOTHING_LENGTH, 6)), 0.0000001f) * (SMOOTHING_LENGTH - r); // Laplacian of viscosity kernel
-            }
+			continue;
+		}
+
+        vec3 delta = particles[i].pos.xyz - particles[j].pos.xyz; // Get vector between current particle and particle in vicinity
+        float r = length(delta); // Get length of the vector
+        if (r < SMOOTHING_LENGTH) // Check if particle is inside smoothing radius
+        {
+			pres_force += normalize(-delta) * PARTICLE_MASS * (particles[i].extras[1] - particles[j].extras[1]) / (2.0f - particles[j].extras[0]) * SPIKY_GRAD * pow(SMOOTHING_LENGTH - r, 3.0f);
+			visc_force += PARTICLE_VISCOSITY * PARTICLE_MASS * (particles[j].vel.xyz - particles[i].vel.xyz) / particles[j].extras[0] * VISC_LAP * (SMOOTHING_LENGTH - r);
         }
     }
-    visc_force *= PARTICLE_VISCOSITY;
 
-    vec3 grav_force = particles[i].extras[0] * GRAVITY_FORCE;
+	vec3 grav_force = GRAVITY_FORCE * PARTICLE_MASS / particles[i].extras[0];
     particles[i].force.xyz = pres_force + visc_force + grav_force;
-
-    // Placeholder
-    //particles[i].force += vec4(0.0f);
 }

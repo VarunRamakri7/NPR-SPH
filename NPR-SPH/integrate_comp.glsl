@@ -4,8 +4,8 @@
 #define NUM_PARTICLES 8000
 
 // For calculations
-#define TIME_STEP 1e-10f
-#define WALL_DAMPING 0.09f
+#define TIME_STEP 0.0002f
+#define WALL_DAMPING 0.001f
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -31,52 +31,44 @@ void main()
     if(i >= NUM_PARTICLES) return;
 
     // Integrate all components
-    vec3 acceleration = particles[i].force.xyz / max(particles[i].extras[0], 0.0000001f);
+    vec3 acceleration = particles[i].force.xyz / particles[i].extras[0];
     vec3 new_vel = particles[i].vel.xyz + TIME_STEP * acceleration;
     vec3 new_pos = particles[i].pos.xyz + TIME_STEP * new_vel;
 
-    //vec3 new_pos = particles[i].pos.xyz;
-    //new_pos.y = particles[i].pos.y - 0.00981f;
-
     // Boundary conditions. Keep particlex within [-1, 1] in all axis
-    if (new_pos.x < -1.0f)
+    if (new_pos.x < -1.1f)
     {
-        new_pos.x = -1.0f;
-        new_vel.x *= -1.0f * WALL_DAMPING;
+        new_pos.x *= -1.0f;
+        new_vel.x *= WALL_DAMPING;
     }
-    else if (new_pos.x > 1.0f)
+    else if (new_pos.x > 1.1f)
     {
         new_pos.x = 1.0f;
-        new_vel.x *= -1.0f * WALL_DAMPING;
+        new_vel.x *= WALL_DAMPING;
     }
-    else if (new_pos.y < -1.0f)
+    else if (new_pos.y < -1.1f)
     {
-        //new_pos.y = 1.0f;
         new_pos.y = -1.0f;
-        new_vel.y *= -1.0f * WALL_DAMPING;
+        new_vel.y *= WALL_DAMPING;
     }
-    else if (new_pos.y > 1.0f)
+    else if (new_pos.y > 1.1f)
     {
         //new_pos.y = -1.0f;
         new_pos.y = 1.0f;
-        new_vel.y *= -1.0f * WALL_DAMPING;
+        new_vel.y *= WALL_DAMPING;
     }
-    else if (new_pos.z < -1.0f)
+    else if (new_pos.z < -1.1f)
     {
         new_pos.z = -1.0f;
-        new_pos.z *= -1.0f * WALL_DAMPING;
+        new_pos.z *= WALL_DAMPING;
     }
-    else if (new_pos.z > 1.0f)
+    else if (new_pos.z > 1.1f)
     {
         new_pos.z = 1.0f;
-        new_pos.z *= -1.0f * WALL_DAMPING;
+        new_pos.z *= WALL_DAMPING;
     }
 
     // Assign calculated values
     particles[i].vel.xyz = new_vel;
     particles[i].pos.xyz = new_pos;
-        
-    // Placeholder
-    //particles[i].vel.xyz += particles[i].force.xyz * TIME_STEP;
-    //particles[i].pos.y -= 0.00981f;
 }

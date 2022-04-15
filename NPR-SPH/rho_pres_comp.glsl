@@ -6,10 +6,9 @@
 // For calculations
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
-#define PARTICLE_RESTING_DENSITY 1000
-#define PARTICLE_MASS 0.02f // Mass = Density * Volume
-#define SMOOTHING_LENGTH (4.0f * PARTICLE_RADIUS)
-#define PARTICLE_STIFFNESS 1000
+#define PARTICLE_RESTING_DENSITY 300
+#define PARTICLE_MASS 3.5f // Mass = Density * Volume
+#define SMOOTHING_LENGTH (10.0f * PARTICLE_RADIUS)
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -28,6 +27,9 @@ layout(std430, binding = 0) buffer PARTICLES
     Particle particles[];
 };
 
+const float POLY6 = 4.0f / (PI * pow(SMOOTHING_LENGTH, 8.0f)); // Poly6 kernal
+const float GAS_CONST = 2000.0f; // const for equation of state
+
 void main()
 {
     uint i = gl_GlobalInvocationID.x;
@@ -43,16 +45,11 @@ void main()
         float r = length(delta); // Get length of the vector
         if (r < SMOOTHING_LENGTH) // Check if particle is inside smoothing radius
         {
-            rho += PARTICLE_MASS * 315.0f * pow(SMOOTHING_LENGTH * SMOOTHING_LENGTH - r * r, 3) / max((64.0f * PI * pow(SMOOTHING_LENGTH, 9)), 0.0000001f);
+			rho += PARTICLE_MASS * POLY6 * pow(SMOOTHING_LENGTH * SMOOTHING_LENGTH - r, 3.0f);
         }
     }
     particles[i].extras[0] = rho; // Assign computed value
     
     // Compute Pressure
-    particles[i].extras[1] = max(PARTICLE_STIFFNESS * (rho - PARTICLE_RESTING_DENSITY), 0.0f);
-
-    // Placeholders
-    //particles[i].rho = 3.0f;
-    //particles[i].pres = 7.0f;
-    //particles[i].age = 5.0f;
+	particles[i].extras[1] = GAS_CONST * (rho - PARTICLE_RESTING_DENSITY);
 }

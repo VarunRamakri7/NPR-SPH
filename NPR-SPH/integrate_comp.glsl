@@ -4,8 +4,8 @@
 #define NUM_PARTICLES 8000
 
 // For calculations
-#define TIME_STEP 0.0002f
-#define WALL_DAMPING 0.001f
+#define TIME_STEP 0.0008f
+#define WALL_DAMPING 0.0005f
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 

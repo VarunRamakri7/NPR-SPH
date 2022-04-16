@@ -7,7 +7,7 @@
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
 #define PARTICLE_MASS 2.5f
-#define SMOOTHING_LENGTH (7.5f * PARTICLE_RADIUS)
+#define SMOOTHING_LENGTH (7.35f * PARTICLE_RADIUS)
 #define PARTICLE_RESTING_DENSITY 200
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;

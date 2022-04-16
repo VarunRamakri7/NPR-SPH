@@ -36,17 +36,18 @@ void main()
     vec3 new_pos = particles[i].pos.xyz + TIME_STEP * new_vel;
 
     // Boundary conditions. Keep particlex within [-1, 1] in all axis
-    if (new_pos.x < -1.1f)
+    if (new_pos.x < -2.1f)
     {
-        new_pos.x *= -1.0f;
+        new_pos.x *= -2.0f;
         new_vel.x *= -WALL_DAMPING;
     }
-    else if (new_pos.x > 1.1f)
+    else if (new_pos.x > 2.1f)
     {
-        new_pos.x = 1.0f;
+        new_pos.x = 2.0f;
         new_vel.x *= -WALL_DAMPING;
     }
-    else if (new_pos.y < -1.1f)
+    
+    if (new_pos.y < -1.1f)
     {
         new_pos.y = -1.0f;
         new_vel.y *= -WALL_DAMPING;
@@ -56,14 +57,15 @@ void main()
         new_pos.y = 1.0f;
         new_vel.y *= -WALL_DAMPING;
     }
-    else if (new_pos.z < -1.1f)
+    
+    if (new_pos.z < -2.1f)
     {
-        new_pos.z = -1.0f;
+        new_pos.z = -2.0f;
         new_pos.z *= -WALL_DAMPING;
     }
-    else if (new_pos.z > 1.1f)
+    else if (new_pos.z > 2.1f)
     {
-        new_pos.z = 1.0f;
+        new_pos.z = 2.0f;
         new_pos.z *= -WALL_DAMPING;
     }
 

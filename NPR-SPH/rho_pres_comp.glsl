@@ -6,7 +6,7 @@
 // For calculations
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
-#define PARTICLE_MASS 2.5f
+#define PARTICLE_MASS 3.5f
 #define SMOOTHING_LENGTH (7.35f * PARTICLE_RADIUS)
 #define PARTICLE_RESTING_DENSITY 200
 

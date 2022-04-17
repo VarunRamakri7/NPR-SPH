@@ -70,7 +70,7 @@ struct SceneUniforms
 
 struct ConstantsUniform
 {
-    float mass = 7.0f; // Particle Mass
+    float mass = 5.5f; // Particle Mass
     float smoothing_coeff = 7.35f; // Smoothing length coefficient for neighborhood
     float visc = 200.0f; // Fluid viscosity
     float resting_rho = 129.0f; // Resting density

@@ -70,18 +70,26 @@ struct SceneUniforms
 
 struct ConstantsUniform
 {
-    float mass = 3.5f; // Particle Mass
+    float mass = 7.0f; // Particle Mass
     float smoothing_coeff = 7.35f; // Smoothing length coefficient for neighborhood
     float visc = 200.0f; // Fluid viscosity
-    float resting_rho = 125.0f; // Resting density
+    float resting_rho = 129.0f; // Resting density
 }ConstantsData;
+
+struct IntegrationUniforms
+{
+    float time_step = 0.0025f;
+    float damping = 0.0005f;
+}IntegrationData;
 
 GLuint scene_ubo = -1;
 GLuint constants_ubo = -1;
+GLuint integration_ubo = -1;
 namespace UboBinding
 {
     int scene = 0;
     int constants = 1;
+    int integration = 2;
 }
 
 //Locations for the uniforms which are not in uniform blocks
@@ -142,9 +150,11 @@ void draw_gui(GLFWwindow* window)
 
     ImGui::Begin("Constants Window");
     ImGui::SliderFloat("Mass", &ConstantsData.mass, 0.1f, 10.0f);
-    ImGui::SliderFloat("Smoothing", &ConstantsData.smoothing_coeff, 1.0f, 10.0f);
-    ImGui::SliderFloat("Viscosity", &ConstantsData.visc, 50.0f, 1000.0f);
+    ImGui::SliderFloat("Smoothing", &ConstantsData.smoothing_coeff, 7.0f, 10.0f);
+    ImGui::SliderFloat("Viscosity", &ConstantsData.visc, 50.0f, 250.0f);
     ImGui::SliderFloat("Resting Density", &ConstantsData.resting_rho, 50.0f, 1000.0f);
+    ImGui::SliderFloat("Time step", &IntegrationData.time_step, 0.00001f, 0.005f);
+    ImGui::SliderFloat("Wall Damping", &IntegrationData.damping, 0.00001f, 0.005f);
     ImGui::End();
 
     //static bool show_test = false;
@@ -175,6 +185,9 @@ void display(GLFWwindow* window)
 
     glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo); // Bind the OpenGL UBO before we update the data.
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ConstantsData), &ConstantsData); // Upload the new uniform values.
+
+    glBindBuffer(GL_UNIFORM_BUFFER, integration_ubo); // Bind the OpenGL UBO before we update the data.
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(IntegrationData), &IntegrationData); // Upload the new uniform values.
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
@@ -405,6 +418,11 @@ void initOpenGL()
     glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantsUniform), nullptr, GL_STREAM_DRAW); //Allocate memory for the buffer, but don't copy (since pointer is null).
     glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::constants, constants_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
+
+    glGenBuffers(1, &integration_ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, integration_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(IntegrationUniforms), nullptr, GL_STREAM_DRAW); //Allocate memory for the buffer, but don't copy (since pointer is null).
+    glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::integration, integration_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }

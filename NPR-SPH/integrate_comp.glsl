@@ -4,8 +4,8 @@
 #define NUM_PARTICLES 8000
 
 // For calculations
-#define TIME_STEP 0.0008f
-#define WALL_DAMPING 0.0005f
+//#define TIME_STEP 0.0025f
+//#define damping 0.0005f
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -25,6 +25,12 @@ layout(std430, binding = 0) buffer PARTICLES
     Particle particles[];
 };
 
+layout(std140, binding = 2) uniform IntegrationUniforms
+{
+    float time_step;
+    float damping;
+};
+
 void main()
 {
     uint i = gl_GlobalInvocationID.x;
@@ -32,41 +38,41 @@ void main()
 
     // Integrate all components
     vec3 acceleration = particles[i].force.xyz / particles[i].extras[0];
-    vec3 new_vel = particles[i].vel.xyz + TIME_STEP * acceleration;
-    vec3 new_pos = particles[i].pos.xyz + TIME_STEP * new_vel;
+    vec3 new_vel = particles[i].vel.xyz + time_step * acceleration;
+    vec3 new_pos = particles[i].pos.xyz + time_step * new_vel;
 
     // Boundary conditions. Keep particlex within [-1, 1] in all axis
     if (new_pos.x < -2.1f)
     {
         new_pos.x *= -2.0f;
-        new_vel.x *= -WALL_DAMPING;
+        new_vel.x *= -damping;
     }
     else if (new_pos.x > 2.1f)
     {
         new_pos.x = 2.0f;
-        new_vel.x *= -WALL_DAMPING;
+        new_vel.x *= -damping;
     }
     
     if (new_pos.y < -1.1f)
     {
         new_pos.y = -1.0f;
-        new_vel.y *= -WALL_DAMPING;
+        new_vel.y *= -damping;
     }
     else if (new_pos.y > 1.1f)
     {
         new_pos.y = 1.0f;
-        new_vel.y *= -WALL_DAMPING;
+        new_vel.y *= -damping;
     }
     
     if (new_pos.z < -2.1f)
     {
         new_pos.z = -2.0f;
-        new_pos.z *= -WALL_DAMPING;
+        new_pos.z *= -damping;
     }
     else if (new_pos.z > 2.1f)
     {
         new_pos.z = 2.0f;
-        new_pos.z *= -WALL_DAMPING;
+        new_pos.z *= -damping;
     }
 
     // Assign calculated values

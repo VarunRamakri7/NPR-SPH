@@ -25,7 +25,14 @@ const char* const window_title = "NPR-SPH";
 
 static const std::string vertex_shader("template_vs.glsl");
 static const std::string fragment_shader("template_fs.glsl");
+static const std::string geometry_triangle_shader("template_gs.glsl");
+static const std::string geometry_point_shader("template_p_gs.glsl");
+static const std::string fragment_p_shader("template_p_fs.glsl");
+static const std::string vertex_p_shader("template_p_vs.glsl");
+
+
 GLuint shader_program = -1;
+GLuint shader_program_p = -1;
 
 static const std::string mesh_name = "Amago0.obj";
 
@@ -34,6 +41,7 @@ GLuint fbo_tex = -1;
 GLuint comp_tex = -1;
 GLuint depth_tex = -1;
 GLuint depthrenderbuffer;
+GLuint first_tex = -1;
 
 float mesh_d;
 float mesh_range;
@@ -60,6 +68,8 @@ struct MaterialUniforms
 GLuint scene_ubo = -1;
 GLuint material_ubo = -1;
 
+GLuint noise_id = -1; //noise texture for hair placement
+
 namespace UboBinding
 {
     //These values come from the binding value specified in the shader block layout
@@ -74,8 +84,9 @@ namespace UniformLocs
     int time = 1;
     int pass = 2;
     int mode = 3; 
-    float mesh_d = 4;
-    float mesh_range = 5;
+    int mesh_d = 4;
+    int mesh_range = 5;
+    int scale = 6;
 }
 
 GLuint texture_id = -1; //Texture map for mesh
@@ -126,8 +137,7 @@ void draw_gui(GLFWwindow* window)
             finish_encoding(); //Uses ffmpeg
         }
     }
-    ImGui::Image((void*)fbo_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
-    ImGui::Image((void*)comp_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
+    ImGui::Image((void*)first_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
     
     ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
     ImGui::SliderFloat("Scale", &scale, -10.0f, +10.0f);
@@ -167,6 +177,8 @@ void display(GLFWwindow* window)
 
     glUseProgram(shader_program);
 
+    glBindTextureUnit(2, noise_id);
+
     // send selected paint mode
     glUniform1i(UniformLocs::mode, paint_mode);
     glUniform1f(UniformLocs::mesh_d, mesh_d);
@@ -184,37 +196,99 @@ void display(GLFWwindow* window)
     //glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
     // pass 0 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glUniform1i(UniformLocs::pass, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
-    glDrawBuffer(GL_COLOR_ATTACHMENT0); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    //glUniform1i(UniformLocs::pass, 0);
+    //glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
+    //glDrawBuffer(GL_COLOR_ATTACHMENT0); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // draw fish into texture
-    glBindVertexArray(mesh_data.mVao);
-    glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    //// draw fish into texture
+    //glBindVertexArray(mesh_data.mVao);
+    //glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
 
     // Pass 1: outline
+    //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    //glUniform1i(UniformLocs::pass, 1);
+    //glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
+    //glBindTextureUnit(0, fbo_tex);
+    //glDrawBuffer(GL_COLOR_ATTACHMENT1); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //// draw fish into texture
+    //glBindVertexArray(mesh_data.mVao);
+    //glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    //// pass 2 
+    //glClearColor(0.35f, 0.35f, 0.35f, 0.0f);
+    //glUniform1i(UniformLocs::pass, 2);
+    ////glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glBindTextureUnit(0, fbo_tex);
+    //glBindTextureUnit(1, comp_tex);
+    //glDrawElements(GL_POINTS, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glBindVertexArray(mesh_data.mVao);
+
+    // pass 1: render mesh depth into texture and get alpha mask
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glUniform1i(UniformLocs::pass, 1);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
-    glBindTextureUnit(0, fbo_tex);
-    glDrawBuffer(GL_COLOR_ATTACHMENT1); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
+    glBindTextureUnit(0, first_tex);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     // draw fish into texture
-    glBindVertexArray(mesh_data.mVao);
     glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    // unbind
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // pass 2 
-    glClearColor(0.35f, 0.35f, 0.35f, 0.0f);
+    //geometry_shader = &geometry_point_shader;
+    glUseProgram(shader_program_p);
+
+    // send selected paint mode
+    glUniform1i(UniformLocs::mode, paint_mode);
+    glUniform1f(UniformLocs::mesh_d, mesh_d);
+    glUniform1f(UniformLocs::mesh_range, mesh_range); 
+    glUniform1f(UniformLocs::scale, scale);
+
+    //Set uniforms
+    glUniformMatrix4fv(UniformLocs::M, 1, false, glm::value_ptr(M));
+
+    glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo); //Bind the OpenGL UBO before we update the data.
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SceneData), &SceneData); //Upload the new uniform values.
+    //glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
+
+    glBindBuffer(GL_UNIFORM_BUFFER, material_ubo); //Bind the OpenGL UBO before we update the data.
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MaterialUniforms), &MaterialData); //Upload the new uniform values.
+    //glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
+    glBindVertexArray(mesh_data.mVao);
+
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+   // glEnable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    //glCullFace(GL_BACK);
+   // glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+   
     glUniform1i(UniformLocs::pass, 2);
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindTextureUnit(0, fbo_tex);
-    glBindTextureUnit(1, comp_tex);
-    glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // Render to FBO.
+    glBindTextureUnit(0, first_tex); // DO WE NEED TO BIND TO READ?
+    glDrawElements(GL_POINTS, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    //glEnable(GL_DEPTH_TEST);
+    // doesnt make sense to not write to depth buffer and do depth test, so mask and test goes together  
+
+    // unbind
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glDisable(GL_CULL_FACE);
+
 
     draw_gui(window);
 
@@ -242,7 +316,8 @@ void idle()
 
 void reload_shader()
 {
-    GLuint new_shader = InitShader(vertex_shader.c_str(), fragment_shader.c_str());
+    //std::string a = *geometry_shader;
+    GLuint new_shader = InitShader(vertex_shader.c_str(), geometry_triangle_shader.c_str(), fragment_shader.c_str());
 
     if (new_shader == -1) // loading failed
     {
@@ -250,7 +325,7 @@ void reload_shader()
     }
     else
     {
-        
+
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         if (shader_program != -1)
@@ -259,6 +334,26 @@ void reload_shader()
         }
         shader_program = new_shader;
     }
+
+    GLuint new_shader_p = InitShader(vertex_p_shader.c_str(), geometry_point_shader.c_str(), fragment_p_shader.c_str());
+
+    if (new_shader_p == -1) // loading failed
+    {
+        glClearColor(1.0f, 0.0f, 1.0f, 0.0f); //change clear color if shader can't be compiled
+    }
+    else
+    {
+
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+        if (shader_program_p != -1)
+        {
+            glDeleteProgram(shader_program_p);
+        }
+        shader_program_p = new_shader_p;
+    }
+
+    
 }
 
 //This function gets called when a key is pressed
@@ -365,6 +460,16 @@ void initOpenGL()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    // R: depth, G: alpha channel
+    glGenTextures(1, &first_tex);
+    glBindTexture(GL_TEXTURE_2D, first_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, max_x, max_y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     // so we can use depth 
     /*glGenTextures(1, &depth_tex);
     glBindTexture(GL_TEXTURE_2D, depth_tex);
@@ -382,8 +487,12 @@ void initOpenGL()
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, max_x, max_y);
 
     //attach the texture we just created to color attachment 1
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_tex, 0);  
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, comp_tex, 0);
+    /*glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_tex, 0);  
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, comp_tex, 0);*/
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, first_tex, 0);
+
+
     // attach depth renderbugger to FBO
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 

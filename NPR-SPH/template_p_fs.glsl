@@ -1,5 +1,6 @@
 #version 430
 #define PI 3.1415926538
+
 layout(binding = 0) uniform sampler2D fbo_tex; 
 layout(binding = 1) uniform sampler2D comp_tex; 
 
@@ -29,6 +30,7 @@ in VertexData
    vec3 nw; //world-space normal vector
    float depth;
    vec2 tex_coord;
+   float color;
 } inData; //block is named 'inData'
 
 out vec4 fragcolor; //the output color for this fragment    
@@ -158,20 +160,27 @@ void main(void)
             //fragcolor *= outline();
             //fragcolor = outline_dot();
             // need to add noise
-
-            vec2 pt = gl_PointCoord;
-//            if ( gl_PointCoord.x < 0.1) {
+            fragcolor = vec4(1.0, 1.0, 0.0, 1.0);
+//            vec2 pt = gl_PointCoord;
+//           if ( gl_PointCoord.x > -0.001) {
 //                discard;
-               fragcolor = vec4(pt.x* 100, pt.y, 0.0, 1.0);
-//            }
+//               //fragcolor = vec4(pt.x* 100, pt.y, 0.0, 1.0);
+//           }
 //            if (pt.x*pt.x + pt.y*pt.y > 0.25) {
 //                discard;
 //            }
 
-            fragcolor = vec4(0.0, 1.0, 0.0, 1.0);
+            //fragcolor = vec4(gl_PointCoord.x*100, gl_PointCoord.y*-100, 0.0, 1.0);
        }
 
     }
+    //fragcolor = vec4(1.0, 0.0, 0.0, 1.0);
+    //fragcolor = vec4(1.0, 1.0, 0.0, inData.color);
+//    if (gl_PointCoord.x > 0.0) {
+//        //discard;
+//        fragcolor = vec4(0.0, 0.0, 1.0, 1.0);
+//    }
+    fragcolor.a = inData.color;
 }
 
 vec4 celshading() {

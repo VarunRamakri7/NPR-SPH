@@ -229,6 +229,7 @@ void reload_shader()
 {
     GLuint new_shader = InitShader(vertex_shader.c_str(), fragment_shader.c_str());
 
+    // Load compute shaders
     GLuint compute_shader_handle = InitShader(rho_pres_com_shader.c_str());
     if (compute_shader_handle != -1)
     {
@@ -317,7 +318,7 @@ std::vector<glm::vec4> make_grid()
 {
     std::vector<glm::vec4> positions;
 
-    // 10x10x10 Cube of particles within [-1, 1] on all axes
+    // 20x20x20 Cube of particles within [0, 0.095] on all axes
     for (int i = 0; i < 20; i++)
     {
         for (int j = 0; j < 20; j++)
@@ -375,11 +376,13 @@ void initOpenGL()
     }
     //std::cout << "Particles count: " << particles.size() << std::endl;
 
+    // Generate and bind shader storage buffer
     glGenBuffers(1, &particles_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * NUM_PARTICLES, particles.data(), GL_STREAM_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_ssbo);
 
+    // Generate and bind VAO for particle positions
     glGenVertexArrays(1, &particle_position_vao);
     glBindVertexArray(particle_position_vao);
 
@@ -387,19 +390,21 @@ void initOpenGL()
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), nullptr); // Bind buffer containing particle positions to VAO
     glEnableVertexAttribArray(0); // Enable attribute with location = 0 (vertex position) for VAO
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    glBindVertexArray(particle_position_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind SSBO
+    //glBindVertexArray(0); // Unbind VAO
+    //glBindVertexArray(particle_position_vao);
 
     reload_shader();
 
     //Create and initialize uniform buffers
+
+    // For SceneUniforms
     glGenBuffers(1, &scene_ubo);
     glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(SceneUniforms), nullptr, GL_STREAM_DRAW); //Allocate memory for the buffer, but don't copy (since pointer is null).
     glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::scene, scene_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
 
+    // For ConstantsUniform
     glGenBuffers(1, &constants_ubo);
     glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantsUniform), nullptr, GL_STREAM_DRAW); //Allocate memory for the buffer, but don't copy (since pointer is null).

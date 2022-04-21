@@ -8,7 +8,7 @@ out vec4 frag_color;
 
 void main ()
 {
-	// Make particles circular
+	// Make circular particles
     float r = length(gl_PointCoord - vec2(0.35f));
     if (r >= 0.35) discard;
 

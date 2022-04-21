@@ -26,12 +26,12 @@
 #include "UniformGui.h"
 
 #define NUM_PARTICLES 8000
-#define PARTICLE_RADIUS 0.1f
+#define PARTICLE_RADIUS 0.005f
 #define WORK_GROUP_SIZE 1024
 #define NUM_WORK_GROUPS 10 // Ceiling of particle count divided by work group size
 
-const int init_window_width = 1080;
-const int init_window_height = 1080;
+const int init_window_width = 720;
+const int init_window_height = 720;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 static const std::string vertex_shader("npr-sph_vs.glsl");
@@ -45,8 +45,8 @@ GLuint compute_programs[3] = { -1, -1, -1 };
 GLuint particle_position_vao = -1;
 GLuint particles_ssbo = -1;
 
-glm::vec3 eye = glm::vec3(10.0f, 5.0f, 0.0f);
-glm::vec3 center = glm::vec3(0.0f);
+glm::vec3 eye = glm::vec3(10.0f, 2.0f, 0.0f);
+glm::vec3 center = glm::vec3(0.0f, -1.0f, 0.0f);
 float angle = 0.75f;
 float scale = 2.5f;
 float aspect = 1.0f;
@@ -70,26 +70,18 @@ struct SceneUniforms
 
 struct ConstantsUniform
 {
-    float mass = 5.5f; // Particle Mass
-    float smoothing_coeff = 7.35f; // Smoothing length coefficient for neighborhood
-    float visc = 200.0f; // Fluid viscosity
-    float resting_rho = 129.0f; // Resting density
+    float mass = 0.02f; // Particle Mass
+    float smoothing_coeff = 4.0f; // Smoothing length coefficient for neighborhood
+    float visc = 2000.0f; // Fluid viscosity
+    float resting_rho = 1000.0f; // Resting density
 }ConstantsData;
-
-struct IntegrationUniforms
-{
-    float time_step = 0.0025f;
-    float damping = 0.0005f;
-}IntegrationData;
 
 GLuint scene_ubo = -1;
 GLuint constants_ubo = -1;
-GLuint integration_ubo = -1;
 namespace UboBinding
 {
     int scene = 0;
     int constants = 1;
-    int integration = 2;
 }
 
 //Locations for the uniforms which are not in uniform blocks
@@ -119,7 +111,6 @@ void draw_gui(GLFWwindow* window)
     static char video_filename[filename_len] = "capture.mp4";
 
     ImGui::InputText("Video filename", video_filename, filename_len);
-    ImGui::SameLine();
     if (recording == false)
     {
         if (ImGui::Button("Start Recording"))
@@ -149,12 +140,10 @@ void draw_gui(GLFWwindow* window)
     ImGui::End();
 
     ImGui::Begin("Constants Window");
-    ImGui::SliderFloat("Mass", &ConstantsData.mass, 0.1f, 10.0f);
+    ImGui::SliderFloat("Mass", &ConstantsData.mass, 0.01f, 0.1f);
     ImGui::SliderFloat("Smoothing", &ConstantsData.smoothing_coeff, 7.0f, 10.0f);
-    ImGui::SliderFloat("Viscosity", &ConstantsData.visc, 50.0f, 250.0f);
-    ImGui::SliderFloat("Resting Density", &ConstantsData.resting_rho, 50.0f, 1000.0f);
-    ImGui::SliderFloat("Time step", &IntegrationData.time_step, 0.00001f, 0.005f);
-    ImGui::SliderFloat("Wall Damping", &IntegrationData.damping, 0.00001f, 0.005f);
+    ImGui::SliderFloat("Viscosity", &ConstantsData.visc, 1000.0f, 5000.0f);
+    ImGui::SliderFloat("Resting Density", &ConstantsData.resting_rho, 1000.0f, 5000.0f);
     ImGui::End();
 
     //static bool show_test = false;
@@ -185,9 +174,6 @@ void display(GLFWwindow* window)
 
     glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo); // Bind the OpenGL UBO before we update the data.
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ConstantsData), &ConstantsData); // Upload the new uniform values.
-
-    glBindBuffer(GL_UNIFORM_BUFFER, integration_ubo); // Bind the OpenGL UBO before we update the data.
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(IntegrationData), &IntegrationData); // Upload the new uniform values.
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
@@ -338,7 +324,7 @@ std::vector<glm::vec4> make_grid()
         {
             for (int k = 0; k < 20; k++)
             {
-                positions.push_back(glm::vec4(-1.0f + (float)i * PARTICLE_RADIUS, -1.0f + (float)j * PARTICLE_RADIUS, -1.0f + (float)k * PARTICLE_RADIUS, 1.0f));
+                positions.push_back(glm::vec4((float)i * PARTICLE_RADIUS, (float)j * PARTICLE_RADIUS, (float)k * PARTICLE_RADIUS, 1.0f));
             }
         }
     }
@@ -370,8 +356,8 @@ void initOpenGL()
     glEnable(GL_DEPTH_TEST);
 
     //Enable alpha blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE); //additive alpha blending
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE); //additive alpha blending
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //semitransparent alpha blending
 
     glEnable(GL_POINT_SPRITE);
@@ -418,11 +404,6 @@ void initOpenGL()
     glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantsUniform), nullptr, GL_STREAM_DRAW); //Allocate memory for the buffer, but don't copy (since pointer is null).
     glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::constants, constants_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
-
-    glGenBuffers(1, &integration_ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, integration_ubo);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(IntegrationUniforms), nullptr, GL_STREAM_DRAW); //Allocate memory for the buffer, but don't copy (since pointer is null).
-    glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::integration, integration_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }

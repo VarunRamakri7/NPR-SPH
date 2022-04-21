@@ -6,10 +6,6 @@
 // For calculations
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
-//#define PARTICLE_MASS 3.5f
-//#define SMOOTHING_LENGTH (7.35f * PARTICLE_RADIUS)
-//#define PARTICLE_VISCOSITY 200.0f
-#define GRAVITY_FORCE vec3(0.0, -9.81f, 0.0f)
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -36,15 +32,16 @@ layout(std140, binding = 1) uniform ConstantsUniform
     float resting_rho; // Resting density
 };
 
-const float SPIKY_GRAD = -10.0f / (PI * pow(smoothing_coeff * PARTICLE_RADIUS, 5.0f));
-const float VISC_LAP = 40.0f / (PI * pow(smoothing_coeff * PARTICLE_RADIUS, 5.0f));
+const vec3 G = vec3(0.0f, -9806.65f, 0.0f); // Gravity force
 
 void main()
 {
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
 
-    float smoothing_length = smoothing_coeff * PARTICLE_RADIUS; // Smoothing length for neighbourhood
+    const float smoothing_length = smoothing_coeff * PARTICLE_RADIUS; // Smoothing length for neighbourhood
+	const float spiky = -45.0f / (PI * pow(smoothing_length, 6)); // Spiky kernal
+	const float laplacian = 45.0f / (PI * pow(smoothing_length, 6)); // Laplacian kernel
 
     // Compute all forces
     vec3 pres_force = vec3(0.0f);
@@ -57,15 +54,16 @@ void main()
 			continue;
 		}
 
-        vec3 delta = particles[j].pos.xyz - particles[i].pos.xyz; // Get vector between current particle and particle in vicinity
+        vec3 delta = particles[i].pos.xyz - particles[j].pos.xyz; // Get vector between current particle and particle in vicinity
         float r = length(delta); // Get length of the vector
         if (r < smoothing_length) // Check if particle is inside smoothing radius
         {
-			pres_force += normalize(-delta) * mass * (particles[i].extras[1] + particles[j].extras[1]) / (2.0f - particles[j].extras[0]) * SPIKY_GRAD * pow(smoothing_length - r, 3.0f);
-			visc_force += visc * mass * (particles[j].vel.xyz - particles[i].vel.xyz) / particles[j].extras[0] * VISC_LAP * (smoothing_length - r);
+			pres_force -= mass * (particles[i].extras[1] + particles[j].extras[1]) / (2.0f * particles[j].extras[0]) * spiky * pow(smoothing_length - r, 2) * normalize(delta); // Use Spiky Kernel
+			visc_force += mass * (particles[j].vel.xyz - particles[i].vel.xyz) / particles[j].extras[0] * laplacian * (smoothing_length - r); // Usee laplacian kernel
         }
     }
+	visc_force *= visc;
 
-	vec3 grav_force = GRAVITY_FORCE * mass / particles[i].extras[0];
+	vec3 grav_force = particles[i].extras[0] * G;
     particles[i].force.xyz = pres_force + visc_force + grav_force;
 }

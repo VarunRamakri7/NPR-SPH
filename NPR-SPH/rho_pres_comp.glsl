@@ -6,9 +6,6 @@
 // For calculations
 #define PI 3.141592741f
 #define PARTICLE_RADIUS 0.1f
-//#define PARTICLE_MASS 3.5f
-//#define SMOOTHING_LENGTH (7.35f * PARTICLE_RADIUS)
-//#define PARTICLE_RESTING_DENSITY 125
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -35,7 +32,6 @@ layout(std140, binding = 1) uniform ConstantsUniform
     float resting_rho; // Resting density
 };
 
-const float POLY6 = 4.0f / (PI * pow((smoothing_coeff * PARTICLE_RADIUS), 8.0f)); // Poly6 kernal
 const float GAS_CONST = 2000.0f; // const for equation of state
 
 void main()
@@ -43,7 +39,7 @@ void main()
     uint i = gl_GlobalInvocationID.x;
     if(i >= NUM_PARTICLES) return;
     
-    float smoothing_length = smoothing_coeff * PARTICLE_RADIUS; // Smoothing length for neighbourhood
+    const float smoothing_length = smoothing_coeff * PARTICLE_RADIUS; // Smoothing length for neighbourhood
 
     // Compute Density (rho)
     float rho = 0.0f;
@@ -51,15 +47,15 @@ void main()
     // Iterate through all particles
     for (uint j = 0; j < NUM_PARTICLES; j++)
     {
-        vec3 delta = particles[j].pos.xyz - particles[i].pos.xyz; // Get vector between current particle and particle in vicinity
+        vec3 delta = particles[i].pos.xyz - particles[j].pos.xyz; // Get vector between current particle and particle in vicinity
         float r = length(delta); // Get length of the vector
         if (r < smoothing_length) // Check if particle is inside smoothing radius
         {
-			rho += mass * POLY6 * pow(smoothing_length * smoothing_length - r, 3.0f);
+			rho += mass * 315.0f * pow(smoothing_length * smoothing_length - r * r, 3) / (64.0f * PI * pow(smoothing_length, 9)); // Use Poly5 kernal
         }
     }
     particles[i].extras[0] = rho; // Assign computed value
     
     // Compute Pressure
-	particles[i].extras[1] = GAS_CONST * (rho - resting_rho);
+	particles[i].extras[1] = max(GAS_CONST * (rho - resting_rho), 0.0f);
 }

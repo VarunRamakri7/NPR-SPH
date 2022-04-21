@@ -11,8 +11,12 @@ layout(std140, binding = 0) uniform SceneUniforms
 
 in vec3 position;
 
+out vec4 particle_pos;
+
 void main ()
 {
     gl_Position = PV * M * vec4(position, 1.0f);
-    gl_PointSize = 5.0f;
+    particle_pos = M * vec4(position, 1.0f);
+
+    gl_PointSize = 10.0f;
 }

@@ -4,8 +4,7 @@
 #define NUM_PARTICLES 8000
 
 // For calculations
-//#define TIME_STEP 0.0025f
-//#define damping 0.0005f
+#define DAMPING 0.3f
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -25,11 +24,7 @@ layout(std430, binding = 0) buffer PARTICLES
     Particle particles[];
 };
 
-layout(std140, binding = 2) uniform IntegrationUniforms
-{
-    float time_step;
-    float damping;
-};
+const float dt = 1.0f / NUM_PARTICLES; // Time step
 
 void main()
 {
@@ -38,41 +33,41 @@ void main()
 
     // Integrate all components
     vec3 acceleration = particles[i].force.xyz / particles[i].extras[0];
-    vec3 new_vel = particles[i].vel.xyz + time_step * acceleration;
-    vec3 new_pos = particles[i].pos.xyz + time_step * new_vel;
+    vec3 new_vel = particles[i].vel.xyz + dt * acceleration;
+    vec3 new_pos = particles[i].pos.xyz + dt * new_vel;
 
-    // Boundary conditions. Keep particlex within [-1, 1] in all axis
-    if (new_pos.x < -2.1f)
+    // Boundary conditions
+    if (new_pos.x < -1.0f)
     {
-        new_pos.x *= -2.0f;
-        new_vel.x *= -damping;
+        new_pos.x = -1.0f;
+        new_vel.x *= -DAMPING;
     }
-    else if (new_pos.x > 2.1f)
+    else if (new_pos.x > 1.0f)
     {
-        new_pos.x = 2.0f;
-        new_vel.x *= -damping;
+        new_pos.x = 1.0f;
+        new_vel.x *= -DAMPING;
     }
     
-    if (new_pos.y < -1.1f)
+    else if (new_pos.y < -1.0f)
     {
         new_pos.y = -1.0f;
-        new_vel.y *= -damping;
+        new_vel.y *= -DAMPING;
     }
-    else if (new_pos.y > 1.1f)
+    else if (new_pos.y > 1.0f)
     {
         new_pos.y = 1.0f;
-        new_vel.y *= -damping;
+        new_vel.y *= -DAMPING;
     }
     
-    if (new_pos.z < -2.1f)
+    else if (new_pos.z < -1.0f)
     {
-        new_pos.z = -2.0f;
-        new_pos.z *= -damping;
+        new_pos.z = -1.0f;
+        new_pos.z *= -DAMPING;
     }
-    else if (new_pos.z > 2.1f)
+    else if (new_pos.z > 1.0f)
     {
-        new_pos.z = 2.0f;
-        new_pos.z *= -damping;
+        new_pos.z = 1.0f;
+        new_pos.z *= -DAMPING;
     }
 
     // Assign calculated values

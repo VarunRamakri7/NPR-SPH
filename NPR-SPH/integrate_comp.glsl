@@ -54,7 +54,6 @@ void main()
         new_vel.x *= -DAMPING;
     }
     
-    
 	if (new_pos.y < lower.y)
     {
         new_pos.y = lower.y;
@@ -66,7 +65,7 @@ void main()
         new_vel.y *= -DAMPING;
     }
     
-    if (new_pos.z < lower.z)
+	if (new_pos.z < lower.z)
     {
         new_pos.z = lower.z;
         new_pos.z *= -DAMPING;

@@ -97,10 +97,19 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="template_fs.glsl">
+    <None Include="toon_fs.glsl">
       <Filter>shaders</Filter>
     </None>
-    <None Include="template_vs.glsl">
+    <None Include="toon_vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="brush_gs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="brush_fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="brush_vs.glsl">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

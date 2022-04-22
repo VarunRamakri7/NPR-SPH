@@ -27,10 +27,10 @@ out VertexData
 
 void main(void)
 {
-	gl_Position = M*vec4(pos_attrib, 1.0); //transform vertices and send result into pipeline
+	gl_Position = P*V*M*vec4(pos_attrib, 1.0); //transform vertices and send result into pipeline
 	outData.pw = vec3(M * vec4(pos_attrib, 1.0)); //world-space vertex position
-	outData.nw = vec3(M* vec4(normal_attrib, 0.0));	//world-space normal vector
-    outData.tex_coord = tex_coord_attrib;
+	outData.nw = vec3(M* vec4(normal_attrib, 0.0));	//world-space normal normal vector
+    outData.tex_coord = vec2(1.0,0.0);
 	// its just the edge of the model, we are looking at the z depth within the model (model space)
 	outData.depth = ((pos_attrib.z + mesh_d) / mesh_range);
 	

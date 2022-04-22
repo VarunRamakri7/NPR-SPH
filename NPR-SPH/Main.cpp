@@ -76,12 +76,20 @@ struct ConstantsUniform
     float resting_rho = 1000.0f; // Resting density
 }ConstantsData;
 
+struct BoundaryUniform
+{
+	glm::vec4 upper = glm::vec4(1.0f);
+	glm::vec4 lower = glm::vec4(-1.0f);
+}BoundaryData;
+
 GLuint scene_ubo = -1;
 GLuint constants_ubo = -1;
+GLuint boundary_ubo = -1;
 namespace UboBinding
 {
     int scene = 0;
     int constants = 1;
+	int boundary = 2;
 }
 
 //Locations for the uniforms which are not in uniform blocks
@@ -144,7 +152,9 @@ void draw_gui(GLFWwindow* window)
     ImGui::SliderFloat("Smoothing", &ConstantsData.smoothing_coeff, 7.0f, 10.0f);
     ImGui::SliderFloat("Viscosity", &ConstantsData.visc, 1000.0f, 5000.0f);
     ImGui::SliderFloat("Resting Density", &ConstantsData.resting_rho, 1000.0f, 5000.0f);
-    ImGui::End();
+	ImGui::SliderFloat3("Upper Bounds", &BoundaryData.upper[0], 0.001f, 1.0f);
+	ImGui::SliderFloat3("Lowwer Bounds", &BoundaryData.lower[0], -1.0f, -0.001f);
+	ImGui::End();
 
     //static bool show_test = false;
     //ImGui::ShowDemoWindow(&show_test);
@@ -174,6 +184,9 @@ void display(GLFWwindow* window)
 
     glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo); // Bind the OpenGL UBO before we update the data.
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ConstantsData), &ConstantsData); // Upload the new uniform values.
+
+	glBindBuffer(GL_UNIFORM_BUFFER, boundary_ubo); // Bind the OpenGL UBO before we update the data.
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(BoundaryUniform), &BoundaryData); // Upload the new uniform values.
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
 
@@ -409,6 +422,11 @@ void initOpenGL()
     glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantsUniform), nullptr, GL_STREAM_DRAW); //Allocate memory for the buffer, but don't copy (since pointer is null).
     glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::constants, constants_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
+
+	glGenBuffers(1, &boundary_ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, boundary_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(BoundaryUniform), nullptr, GL_STREAM_DRAW); //Allocate memory for the buffer, but don't copy (since pointer is null).
+	glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::boundary, boundary_ubo); //Associate this uniform buffer with the uniform block in the shader that has the same binding.
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }

@@ -24,6 +24,12 @@ layout(std430, binding = 0) buffer PARTICLES
     Particle particles[];
 };
 
+layout (std140, binding = 2) uniform Boundary
+{
+	vec4 upper;
+	vec4 lower;
+};
+
 const float dt = 1.0f / NUM_PARTICLES; // Time step
 
 void main()
@@ -37,36 +43,37 @@ void main()
     vec3 new_pos = particles[i].pos.xyz + dt * new_vel;
 
     // Boundary conditions
-    if (new_pos.x < -1.0f)
+    if (new_pos.x < lower.x)
     {
-        new_pos.x = -1.0f;
+        new_pos.x = lower.x;
         new_vel.x *= -DAMPING;
     }
-    else if (new_pos.x > 1.0f)
+    else if (new_pos.x > upper.x)
     {
-        new_pos.x = 1.0f;
+        new_pos.x = upper.x;
         new_vel.x *= -DAMPING;
     }
     
-    else if (new_pos.y < -1.0f)
+    
+	if (new_pos.y < lower.y)
     {
-        new_pos.y = -1.0f;
+        new_pos.y = lower.y;
         new_vel.y *= -DAMPING;
     }
-    else if (new_pos.y > 1.0f)
+    else if (new_pos.y > upper.y)
     {
-        new_pos.y = 1.0f;
+        new_pos.y = upper.y;
         new_vel.y *= -DAMPING;
     }
     
-    else if (new_pos.z < -1.0f)
+    if (new_pos.z < lower.z)
     {
-        new_pos.z = -1.0f;
+        new_pos.z = lower.z;
         new_pos.z *= -DAMPING;
     }
-    else if (new_pos.z > 1.0f)
+    else if (new_pos.z > upper.z)
     {
-        new_pos.z = 1.0f;
+        new_pos.z = upper.z;
         new_pos.z *= -DAMPING;
     }
 

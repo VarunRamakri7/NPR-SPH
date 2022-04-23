@@ -1,9 +1,10 @@
-#version 430
+#version 440
 #define PI 3.1415926538
 
 layout(binding = 0) uniform sampler2D bw_tex; 
 
 layout(location = 2) uniform int pass;
+layout(location = 3) uniform int mode;
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -13,7 +14,7 @@ layout(std140, binding = 0) uniform SceneUniforms
    vec4 light_w; //world-space light position
 };
 
-layout(std140, binding = 1) uniform MaterialUniforms
+layout(std140, binding = 3 ) uniform MaterialUniforms
 {
    vec4 dark;	//ambient material color
    vec4 midtone;	//diffuse material color
@@ -52,6 +53,14 @@ vec3 desaturate(vec3 color, float amount);
 
 void main(void)
 {   
+    if (mode == 1) {
+    // circle
+    float rad = 0.35;
+    float r = length(gl_PointCoord - vec2(rad));
+    if (r >= rad) {
+    discard;
+    }
+    }
     
     fragcolor = celshading();
 
@@ -65,6 +74,7 @@ void main(void)
         // outline 
         fragcolor *= outline();
     }
+   
 }
 
 vec4 celshading() {
@@ -72,6 +82,13 @@ vec4 celshading() {
     const float eps = 1e-8; //small value to avoid division by 0
 
     vec3 nw = normalize(inData.nw); //world-space unit normal vector
+    if (mode == 1) {
+        // need to recalc normal
+        vec2 p = 2.0*gl_PointCoord.xy - vec2(1.0);
+        float z = sqrt(1.0 - dot(p, p));
+        nw = normalize(vec3(p, z)); // normalize or no? 
+        //nw = normalize(vec3(1.0f - pow (gl_FragCoord.x, 2) - pow(gl_FragCoord.y, 2)));
+    }
     vec3 lw = normalize(light_w.xyz - inData.pw.xyz); //world-space unit light vector
     vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	//world-space unit view vector
     vec3 hw = normalize(lw + vw); // Halfway vector

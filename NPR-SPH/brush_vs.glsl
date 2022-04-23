@@ -1,6 +1,6 @@
-#version 430   
+#version 440   
 layout(location = 0) uniform mat4 M;
-layout(location = 1) uniform float time;
+//layout(location = 1) uniform float time;
 layout(location = 4) uniform float mesh_d;
 layout(location = 5) uniform float mesh_range;
 

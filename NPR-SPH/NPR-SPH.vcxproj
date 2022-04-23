@@ -163,6 +163,7 @@
     <ClCompile Include="..\imgui-master\imgui_draw.cpp" />
     <ClCompile Include="..\imgui-master\imgui_tables.cpp" />
     <ClCompile Include="..\imgui-master\imgui_widgets.cpp" />
+    <ClCompile Include="DebugCallback.cpp" />
     <ClCompile Include="InitShader.cpp" />
     <ClCompile Include="LoadMesh.cpp" />
     <ClCompile Include="LoadTexture.cpp" />
@@ -178,12 +179,18 @@
     <ClInclude Include="..\imgui-master\imstb_rectpack.h" />
     <ClInclude Include="..\imgui-master\imstb_textedit.h" />
     <ClInclude Include="..\imgui-master\imstb_truetype.h" />
+    <ClInclude Include="DebugCallback.h" />
     <ClInclude Include="InitShader.h" />
     <ClInclude Include="LoadMesh.h" />
     <ClInclude Include="LoadTexture.h" />
     <ClInclude Include="VideoMux.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="force_comp.glsl" />
+    <None Include="integrate_comp.glsl" />
+    <None Include="npr-sph_fs.glsl" />
+    <None Include="npr-sph_vs.glsl" />
+    <None Include="rho_pres_comp.glsl" />
     <None Include="toon_fs.glsl" />
     <None Include="brush_fs.glsl" />
     <None Include="brush_gs.glsl" />

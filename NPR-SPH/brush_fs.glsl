@@ -1,12 +1,10 @@
-#version 430
+#version 440
 #define PI 3.1415926538
 
 layout(binding = 0) uniform sampler2D fbo_tex; 
-layout(binding = 1) uniform sampler2D post_tex; 
 
-layout(location = 1) uniform float time;
+//layout(location = 1) uniform float time;
 layout(location = 2) uniform int pass;
-layout(location = 3) uniform int paint_mode;
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -16,7 +14,7 @@ layout(std140, binding = 0) uniform SceneUniforms
    vec4 light_w; //world-space light position
 };
 
-layout(std140, binding = 1) uniform MaterialUniforms
+layout(std140, binding = 3) uniform MaterialUniforms
 {
    vec4 dark;	//ambient material color
    vec4 midtone;	//diffuse material color

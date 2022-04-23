@@ -57,6 +57,9 @@
     <ClCompile Include="..\imgui-master\backends\imgui_impl_opengl3.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="DebugCallback.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VideoMux.h">
@@ -95,6 +98,9 @@
     <ClInclude Include="..\imgui-master\backends\imgui_impl_opengl3.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="DebugCallback.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="toon_fs.glsl">
@@ -110,6 +116,21 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="brush_vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="force_comp.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="integrate_comp.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="npr-sph_fs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="npr-sph_vs.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="rho_pres_comp.glsl">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

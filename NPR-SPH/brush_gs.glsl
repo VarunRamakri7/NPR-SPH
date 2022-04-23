@@ -1,11 +1,11 @@
-#version 430
+#version 440
 
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
 layout(location = 0) uniform mat4 M;
 
-layout(location = 1) uniform float time;
+//layout(location = 1) uniform float time;
 layout(location = 2) uniform int pass;
 layout(location = 3) uniform int paint_mode;
 layout(location = 6) uniform float scale;

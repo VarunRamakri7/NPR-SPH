@@ -67,7 +67,8 @@ float simulation_radius = 10.0f;
 glm::vec3 center = glm::vec3(0.0f);	//world-space eye position
 int paint_mode = render_style::toon;
 
-// mesh TODO change to something else
+// meshes
+MeshData mesh_data;
 int mesh_id = 0; // purdue_mesh
 int display_mesh = 0;
 const static std::string mesh_options[2] = { "purdueobj.obj" , "scene.obj" };
@@ -82,7 +83,7 @@ GLuint constants_ubo = -1;
 GLuint boundary_ubo = -1;
 GLuint material_ubo = -1;
 
-MeshData mesh_data;
+glm::vec3 clear_color = glm::vec3(0.5);
 
 struct Particle
 {
@@ -193,6 +194,8 @@ void draw_gui(GLFWwindow* window)
     ImGui::RadioButton("ToonShader", &paint_mode, render_style::toon);
     ImGui::SameLine();
     ImGui::RadioButton("Paint", &paint_mode, render_style::paint);
+
+    ImGui::ColorEdit3("BG Color", &clear_color.r, 0);
 
     // Control Material colors
     ImGui::ColorEdit3("Outline Color", &MaterialData.outline.r, 0);
@@ -323,7 +326,7 @@ void display(GLFWwindow* window)
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUniform1i(UniformLocs::pass, 1);

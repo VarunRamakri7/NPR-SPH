@@ -68,7 +68,9 @@ glm::vec3 center = glm::vec3(0.0f);	//world-space eye position
 int paint_mode = render_style::toon;
 
 // mesh TODO change to something else
-static const std::string mesh_name = "purdueobj.obj";
+int mesh_id = 0; // purdue_mesh
+int display_mesh = 0;
+const static std::string mesh_options[2] = { "purdueobj.obj" , "scene.obj" };
 
 GLuint fbo = -1;
 GLuint fbo_tex = -1;
@@ -211,6 +213,11 @@ void draw_gui(GLFWwindow* window)
     if (simulate) {
         // add simulation options 
         ImGui::SliderFloat("Particle Size", &simulation_radius, 10.0f, 100.0f);
+    }
+    else {
+        // add mesh options
+        ImGui::RadioButton("Purdue", &mesh_id, 0);
+        ImGui::RadioButton("Landscape", &mesh_id, 1);
     }
 
     ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);
@@ -405,6 +412,19 @@ void prepare_shader(GLuint* shader_name, const char* vShaderFile, const char* gS
 
 }
 
+void reload_mesh() {
+
+    mesh_data = LoadMesh(mesh_options[mesh_id]);
+    glBindVertexArray(0); // Unbind VAO
+
+    // get mesh depth range from bounding box to compute normalized fading factor
+    mesh_d = -mesh_data.mBbMin.z;
+    // add mesh_d to vertex to offset everything to 0 and divide all by abs(min-max) 
+    mesh_range = glm::abs(mesh_data.mBbMin.z - mesh_data.mBbMax.z);
+
+    display_mesh = mesh_id;
+}
+
 void reload_shader()
 {
     prepare_shader(&toon_shader_program, toon_vs.c_str(), NULL, toon_fs.c_str());
@@ -554,25 +574,12 @@ void initOpenGL()
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), nullptr); // Bind buffer containing particle positions to VAO
     glEnableVertexAttribArray(0); // Enable attribute with location = 0 (vertex position) for VAO
 
-    /*glGenVertexArrays(1, &particle_velocity_vao);
-    glBindVertexArray(particle_velocity_vao);*/
-
-    //glBindBuffer(GL_ARRAY_BUFFER, particles_ssbo);
-    //glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), nullptr); // Bind buffer containing particle velocity to VAO
-    //glEnableVertexAttribArray(1); // Enable attribute with location = 0 (vertex position) for VAO
-
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind SSBO
     glBindVertexArray(0); // Unbind VAO
     //glBindVertexArray(particle_position_vao);
 
     reload_shader();
-    mesh_data = LoadMesh(mesh_name);
-    glBindVertexArray(0); // Unbind VAO
-
-    // get mesh depth range from bounding box to compute normalized fading factor
-    mesh_d = - mesh_data.mBbMin.z;
-    // add mesh_d to vertex to offset everything to 0 and divide all by abs(min-max) 
-    mesh_range = glm::abs(mesh_data.mBbMin.z - mesh_data.mBbMax.z);
+    reload_mesh();
 
     // get biggest texture size needed, so resize wont clip textures
     int count;
@@ -696,6 +703,9 @@ int main(int argc, char** argv)
     while (!glfwWindowShouldClose(window))
     {
         idle();
+        if (mesh_id != display_mesh) {
+            reload_mesh();
+        }
         display(window);
 
         /* Poll for and process events */

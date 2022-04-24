@@ -5,7 +5,6 @@ layout(location = 4) uniform float mesh_d;
 layout(location = 5) uniform float mesh_range;
 layout(location = 3) uniform int mode;
 layout(location = 7) uniform float sim_rad;
-layout(location = 6) uniform float scale;
 
 
 layout(std140, binding = 0) uniform SceneUniforms

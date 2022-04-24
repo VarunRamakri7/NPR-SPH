@@ -17,13 +17,21 @@ layout(std140, binding = 0) uniform SceneUniforms
    vec4 light_w; //world-space light position
 };
 
+layout(std140, binding = 3) uniform MaterialUniforms
+{
+   vec4 dark;	//ambient material color
+   vec4 midtone;	//diffuse material color
+   vec4 highlight;	//specular material color
+   float shininess;
+   float brush_scale;
+};
+
 in VertexData
 {
    vec3 pw;       //world-space vertex position
    vec3 nw;   //world-space normal vector
    float depth;
    vec2 tex_coord;
-   vec3 pos_attrib;
 } inData[]; 
 
 out VertexData
@@ -71,8 +79,8 @@ void main() {
         // W = normal and U 
         vec3 w = cross(normalize(outData.nw), u);
         // OFFSET FROM POINT
-        float width = 0.03*scale; //0.03 do 0.01x0.01 to check
-        float height = 0.02*scale; //0.02
+        float width = 0.03*scale*brush_scale; //0.03 do 0.01x0.01 to check
+        float height = 0.02*scale*brush_scale; //0.02
         float n_offset = 0.0001;
         outData.color = trans_min + (trans_max - trans_min) * r;
         outData.color -= 0.01; // blur edge

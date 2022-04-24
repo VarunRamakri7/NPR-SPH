@@ -21,6 +21,7 @@ layout(std140, binding = 3 ) uniform MaterialUniforms
    vec4 dark;	//ambient material color
    vec4 midtone;	//diffuse material color
    vec4 highlight;	//specular material color
+   float shininess;
 };
 
 in VertexData
@@ -52,20 +53,15 @@ mat3 sy = mat3(
 vec4 outline();
 vec4 celshading();
 vec3 desaturate(vec3 color, float amount);
+vec4 phong();
 
 void main(void)
 {   
-    if (mode == 1) {
-        // simulate
-        // make circle
-        float rad = 0.35;
-        float r = length(gl_PointCoord - vec2(rad));
-        if (r >= rad) {
-            discard;
-        }
-    }
-    
     fragcolor = celshading();
+    if (style == 1) {
+        // paint
+        fragcolor = phong();
+    }
 
     if (pass == 0) {
         // black and white for clear outline
@@ -73,11 +69,10 @@ void main(void)
         // bw value, depth, alpha, -
         fragcolor = vec4(dot(fragcolor.rgb, lum), inData.depth, 1.0, fragcolor.a);
     } else if (pass == 1) {
-        fragcolor.rgb = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/4, 4), 0, 0.4));
+        fragcolor.rgb = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0, 0.8));
         // outline 
         fragcolor *= outline();
     }
-   
 }
 
 vec4 celshading() {
@@ -88,7 +83,9 @@ vec4 celshading() {
     if (mode == 1) {
         // need to recalc normal
         vec2 p = 2.0*gl_PointCoord.xy - vec2(1.0);
-        float z = sqrt(1.0 - dot(p, p));
+        float mag = dot(p, p); 
+        if (mag > 1.0) discard; // discard if outside of radius length
+        float z = sqrt(1.0 - mag);
         nw = normalize(vec3(p, z)); // normalize or no? 
     }
     vec3 lw = normalize(light_w.xyz - inData.pw.xyz); //world-space unit light vector
@@ -96,26 +93,21 @@ vec4 celshading() {
     vec3 hw = normalize(lw + vw); // Halfway vector
 
     // reflect
-    vec3 r = normalize(reflect(lw, nw));
-    float specular =dot(nw, lw);
-    float diffuse = max(dot(-lw, nw), 0.0);
+    vec3 r = normalize(reflect(-lw, nw));
+    float nl = dot(nw, lw);
 
-    float intensity = 0.6 * diffuse + 0.4 * specular;
-
-    // cell shading 
-    if (specular >= 0) { 
-        // highlights
-        fragcolor = La * highlight * 1.5;
-        
-    } else if (specular < 0) {
-        // midtones
-        fragcolor = midtone * 0.7;
-    } 
-    if (dot(r, vw) > 0.95) {
-        // darkest
-        fragcolor = dark * 0.5;
+    if (nl < 0) {
+        // ambient 
+        fragcolor = dark;
+    } else {
+        // if (specular >=0) : diffuse
+        fragcolor = midtone;
     }
-    
+
+    if (pow(dot(r, vw), shininess) > 0.95) {
+        fragcolor = highlight;
+    }
+
     return fragcolor;
 
 }
@@ -152,4 +144,23 @@ vec3 desaturate(vec3 color, float amount)
 {
     vec3 gray = vec3(dot(vec3(1.0), color));
     return vec3(mix(color, gray, amount));
+}
+
+vec4 phong() {
+     //Compute per-fragment Phong lighting	
+
+      const float eps = 1e-8; //small value to avoid division by 0
+      float d = distance(light_w.xyz, inData.pw.xyz);
+      float atten = 1.0/(d*d+eps); //d-squared attenuation
+
+      vec3 nw = normalize(inData.nw);			//world-space unit normal vector
+      vec3 lw = normalize(light_w.xyz - inData.pw.xyz);	//world-space unit light vector
+      vec4 diffuse_term = atten*midtone*max(0.0, dot(nw, lw));
+
+      vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	//world-space unit view vector
+      vec3 rw = reflect(-lw, nw);	//world-space unit reflection vector
+
+      vec4 specular_term = highlight*pow(max(0.0, dot(rw, vw)), shininess);
+
+      return dark + diffuse_term + specular_term;
 }

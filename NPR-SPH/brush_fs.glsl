@@ -4,6 +4,8 @@
 layout(binding = 0) uniform sampler2D fbo_tex; 
 
 layout(location = 6) uniform float scale;
+layout(location = 3) uniform int mode;
+
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -18,6 +20,8 @@ layout(std140, binding = 3) uniform MaterialUniforms
    vec4 dark;	//ambient material color
    vec4 midtone;	//diffuse material color
    vec4 highlight;	//specular material color
+   float shininess;
+   float brush_scale;
 };
 
 in VertexData
@@ -41,19 +45,19 @@ vec4 outline();
 vec4 celshading();
 vec3 desaturate(vec3 color, float amount);
 vec4 blur(int rad, sampler2D tex);
-
+vec4 phong();
 
 void main(void)
 {   
-    fragcolor = celshading();
+    // but then toon shading under -> needs to change with mode
+    fragcolor = mix(celshading(), phong(), 0.5);
     // random from noise function
-//    float r = fract(sin(dot(inData.tex_coord,vec2(12.9898,78.233))) * 43758.5453)+0.001;
-//    fragcolor *= r;
+    //0.02 to lower the range, adding subtle variation
+    float noise = (fract(sin(dot(inData.tex_coord, vec2(12.9898,78.233))) * 43758.5453)*0.02);
+    fragcolor += noise;
     fragcolor.a = texelFetch(fbo_tex, ivec2(gl_FragCoord), 0).b * inData.color;
     fragcolor *= outline();
-    fragcolor.rgb = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/4, 4), 0, 0.4));
-    // noise in color TODO 
-
+    fragcolor.rgb = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0, 0.8));
 }
 
 vec3 desaturate(vec3 color, float amount)
@@ -63,39 +67,62 @@ vec3 desaturate(vec3 color, float amount)
     return vec3(mix(color, gray, amount));
 }
 
+// All components are in the range [0…1], including hue.
+vec3 rgb2hsv(vec3 c)
+{
+    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+// All components are in the range [0…1], including hue.
+vec3 hsv2rgb(vec3 c)
+{
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 vec4 celshading() {
     // Compute Cook-Torrance Lighting
     const float eps = 1e-8; //small value to avoid division by 0
 
     vec3 nw = normalize(inData.nw); //world-space unit normal vector
+    if (mode == 1) {
+        // need to recalc normal
+        vec2 p = 2.0*gl_PointCoord.xy - vec2(1.0);
+        float mag = dot(p, p); 
+        if (mag > 1.0) discard; // discard if outside of radius length
+        float z = sqrt(1.0 - mag);
+        nw = normalize(vec3(p, z)); // normalize or no? 
+    }
     vec3 lw = normalize(light_w.xyz - inData.pw.xyz); //world-space unit light vector
     vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	//world-space unit view vector
     vec3 hw = normalize(lw + vw); // Halfway vector
 
     // reflect
-    vec3 r = normalize(reflect(lw, nw));
-    float specular =dot(nw, lw);
-    float diffuse = max(dot(-lw, nw), 0.0);
+    vec3 r = normalize(reflect(-lw, nw));
+    float nl = dot(nw, lw);
 
-    float intensity = 0.6 * diffuse + 0.4 * specular;
-
-    // cell shading 
-    if (specular >= 0) { 
-        // highlights
-        fragcolor = La * highlight * 1.5;
-        
-    } else if (specular < 0) {
-        // midtones
-        fragcolor = midtone * 0.7;
-    } 
-    if (dot(r, vw) > 0.95) {
-        // darkest
-        fragcolor = dark * 0.5;
+    if (nl < 0) {
+        // ambient 
+        fragcolor = dark;
+    } else {
+        // if (specular >=0) : diffuse
+        fragcolor = midtone  ;
     }
-    
-    return fragcolor;
 
+    if (pow(dot(r, vw), shininess) > 0.95) {
+        fragcolor = highlight;
+    }
+
+    return fragcolor;
 }
+
 mat3 sx = mat3( 
     1.0, 2.0, 1.0, 
     0.0, 0.0, 0.0, 
@@ -158,4 +185,23 @@ vec4 blur(int rad, sampler2D tex)
    }
    blur = blur/n;
    return blur;
+}
+
+vec4 phong() {
+     //Compute per-fragment Phong lighting	
+
+      const float eps = 1e-8; //small value to avoid division by 0
+      float d = distance(light_w.xyz, inData.pw.xyz);
+      float atten = 1.0/(d*d+eps); //d-squared attenuation
+
+      vec3 nw = normalize(inData.nw);			//world-space unit normal vector
+      vec3 lw = normalize(light_w.xyz - inData.pw.xyz);	//world-space unit light vector
+      vec4 diffuse_term = atten*midtone*max(0.0, dot(nw, lw));
+
+      vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	//world-space unit view vector
+      vec3 rw = reflect(-lw, nw);	//world-space unit reflection vector
+
+      vec4 specular_term = highlight*pow(max(0.0, dot(rw, vw)), shininess);
+
+      return dark + diffuse_term + specular_term;
 }

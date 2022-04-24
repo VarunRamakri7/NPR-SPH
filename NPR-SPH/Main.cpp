@@ -68,7 +68,7 @@ glm::vec3 center = glm::vec3(0.0f);	//world-space eye position
 int paint_mode = render_style::toon;
 
 // mesh TODO change to something else
-static const std::string mesh_name = "Amago0.obj";
+static const std::string mesh_name = "tree_obj.obj";
 
 GLuint fbo = -1;
 GLuint fbo_tex = -1;
@@ -118,6 +118,8 @@ struct MaterialUniforms
     glm::vec4 dark = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Ambient material color
     glm::vec4 midtone = glm::vec4(glm::vec3(0.5f), 1.0f); // Diffuse material color
     glm::vec4 highlight = glm::vec4(1.0f); // Specular material color
+    float shininess = 0.3;
+    float brush_scale = 1.0;
 } MaterialData;
 
 namespace UboBinding
@@ -132,7 +134,7 @@ namespace UboBinding
 namespace UniformLocs
 {
     int M = 0; //model matrix
-    int time = 1;
+    int style = 1;
     int pass = 2;
     int mode = 3; 
     int mesh_d = 4;
@@ -188,6 +190,7 @@ void draw_gui(GLFWwindow* window)
     ImGui::RadioButton("ToonShader", &paint_mode, render_style::toon);
     ImGui::SameLine();
     ImGui::RadioButton("Paint", &paint_mode, render_style::paint);
+    ImGui::SliderFloat("Brush Size", &MaterialData.brush_scale, 0.0001f, 2.0f);
 
     ImGui::RadioButton("Simulate", &simulate, 1);
     ImGui::SameLine();
@@ -199,12 +202,13 @@ void draw_gui(GLFWwindow* window)
 
     ImGui::SliderFloat("Particle Size", &simulation_radius, 10.0f, 100.0f);
     
-    ImGui::SliderFloat4("Light position", &SceneData.light_w.x, -1.0f, 1.0f);
+    ImGui::SliderFloat3("Light position", &SceneData.light_w.x, -10.0f, 10.0f);
 
     // Control Material colors
     ImGui::ColorEdit3("Toon Darkest Color", &MaterialData.dark.r, 0);
     ImGui::ColorEdit3("Toon Midtone Color", &MaterialData.midtone.r, 0);
     ImGui::ColorEdit3("Toon Highlight Color", &MaterialData.highlight.r, 0);
+    ImGui::SliderFloat("Specular", &MaterialData.shininess, 0.0f, 1.0f);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
@@ -235,6 +239,7 @@ void sendUniforms() {
 
     //Set uniforms
     glUniformMatrix4fv(UniformLocs::M, 1, false, glm::value_ptr(M));
+    glUniform1i(UniformLocs::style, paint_mode);
     glUniform1i(UniformLocs::mode, simulate);
     glUniform1f(UniformLocs::mesh_d, mesh_d);
     glUniform1f(UniformLocs::mesh_range, mesh_range);
@@ -259,8 +264,6 @@ void display(GLFWwindow* window)
 {
     //Clear the screen to the color previously specified in the glClearColor(...) call.
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    sendUniforms();
 
     // Use compute shader
     if (simulate)

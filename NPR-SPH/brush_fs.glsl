@@ -20,6 +20,7 @@ layout(std140, binding = 3) uniform MaterialUniforms
    vec4 dark;	//ambient material color
    vec4 midtone;	//diffuse material color
    vec4 highlight;	//specular material color
+   vec4 outline_color;
    float shininess;
    float brush_scale;
 };
@@ -55,14 +56,27 @@ void main(void)
     //0.02 to lower the range, adding subtle variation
     float noise = (fract(sin(dot(inData.tex_coord, vec2(12.9898,78.233))) * 43758.5453)*0.02);
     fragcolor += noise;
+    // lighter outline at the back
+    vec3 fill = outline().rgb;
+    vec3 outlines = vec3(1.0) - fill; // inverse of fill
+    vec3 line_color = desaturate(outline_color.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0, 0.8)) * outlines;
+    vec3 desat_fill = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0, 0.8)) * fill;
+  
+    fragcolor = vec4(line_color + desat_fill, 1.0);
     fragcolor.a = texelFetch(fbo_tex, ivec2(gl_FragCoord), 0).b * inData.color;
-    fragcolor *= outline();
-    fragcolor.rgb = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0, 0.8));
+    // if the depth is different then its a different object and can discard
+    if (abs(inData.depth - texelFetch(fbo_tex, ivec2(gl_FragCoord), 0).g) > 0.01) {
+        discard;
+    }
 }
 
 vec3 desaturate(vec3 color, float amount)
 {
     vec3 gray = vec3(dot(vec3(1.0), color));
+    if (color == vec3(0.0,0.0,0.0)) {
+        // if black, grey is 0.7
+        gray = vec3(0.7);
+    }
     //return gray;
     return vec3(mix(color, gray, amount));
 }
@@ -110,10 +124,10 @@ vec4 celshading() {
 
     if (nl < 0) {
         // ambient 
-        fragcolor = dark;
+        fragcolor = dark ;
     } else {
         // if (specular >=0) : diffuse
-        fragcolor = midtone  ;
+        fragcolor = midtone;
     }
 
     if (pow(dot(r, vw), shininess) > 0.95) {

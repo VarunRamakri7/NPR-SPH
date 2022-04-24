@@ -68,7 +68,7 @@ glm::vec3 center = glm::vec3(0.0f);	//world-space eye position
 int paint_mode = render_style::toon;
 
 // mesh TODO change to something else
-static const std::string mesh_name = "tree_obj.obj";
+static const std::string mesh_name = "purdueobj.obj";
 
 GLuint fbo = -1;
 GLuint fbo_tex = -1;
@@ -116,8 +116,9 @@ struct BoundaryUniform
 struct MaterialUniforms
 {
     glm::vec4 dark = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Ambient material color
-    glm::vec4 midtone = glm::vec4(glm::vec3(0.5f), 1.0f); // Diffuse material color
-    glm::vec4 highlight = glm::vec4(1.0f); // Specular material color
+    glm::vec4 midtone = glm::vec4(glm::vec3(0.5f), 1.0); // Diffuse material color
+    glm::vec4 highlight = glm::vec4(glm::vec3(1.0f), 1.0); // Specular material color
+    glm::vec4 outline = glm::vec4(glm::vec3(0.0f), 1.0);
     float shininess = 0.3;
     float brush_scale = 1.0;
 } MaterialData;
@@ -205,6 +206,7 @@ void draw_gui(GLFWwindow* window)
     ImGui::SliderFloat3("Light position", &SceneData.light_w.x, -10.0f, 10.0f);
 
     // Control Material colors
+    ImGui::ColorEdit3("Outline Color", &MaterialData.outline.r, 0);
     ImGui::ColorEdit3("Toon Darkest Color", &MaterialData.dark.r, 0);
     ImGui::ColorEdit3("Toon Midtone Color", &MaterialData.midtone.r, 0);
     ImGui::ColorEdit3("Toon Highlight Color", &MaterialData.highlight.r, 0);

@@ -22,6 +22,7 @@ layout(std140, binding = 3 ) uniform MaterialUniforms
    vec4 dark;	//ambient material color
    vec4 midtone;	//diffuse material color
    vec4 highlight;	//specular material color
+   vec4 outline_color;
    float shininess;
 };
 
@@ -60,19 +61,23 @@ void main(void)
 {   
     fragcolor = celshading();
     if (style == 1) {
-        // paint
+        // paint -> use phong
         fragcolor = phong();
     }
 
     if (pass == 0) {
+        // outputs to texture
+
         // black and white for clear outline
         vec3 lum = vec3(0.299, 0.587, 0.114);
         // bw value, depth, alpha, -
-        fragcolor = vec4(dot(fragcolor.rgb, lum), inData.depth, 1.0, fragcolor.a);
+        fragcolor = vec4(dot(fragcolor.rgb, lum), inData.depth, 1.0, 1.0);
+
     } else if (pass == 1) {
-        fragcolor.rgb = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0, 0.8));
-        // outline 
-        fragcolor *= outline();
+        // outputs to screen
+        vec3 fill = outline().rgb;
+        vec3 outlines = vec3(1.0) - fill; // inverse of fill
+        fragcolor = vec4((outline_color.rgb * outlines) + (fragcolor.rgb * fill), 1.0);
     }
 }
 

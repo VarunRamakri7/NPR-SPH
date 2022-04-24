@@ -22,6 +22,7 @@ layout(std140, binding = 3) uniform MaterialUniforms
    vec4 dark;	//ambient material color
    vec4 midtone;	//diffuse material color
    vec4 highlight;	//specular material color
+   vec4 outline_color;
    float shininess;
    float brush_scale;
 };

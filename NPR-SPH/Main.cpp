@@ -155,7 +155,7 @@ void draw_gui(GLFWwindow* window)
     //UniformGui(shader_program);
 
     //Draw Gui
-    ImGui::Begin("Debug window");
+    ImGui::Begin("Visualization Window");
     if (ImGui::Button("Quit"))
     {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -191,19 +191,6 @@ void draw_gui(GLFWwindow* window)
     ImGui::RadioButton("ToonShader", &paint_mode, render_style::toon);
     ImGui::SameLine();
     ImGui::RadioButton("Paint", &paint_mode, render_style::paint);
-    ImGui::SliderFloat("Brush Size", &MaterialData.brush_scale, 0.0001f, 2.0f);
-
-    ImGui::RadioButton("Simulate", &simulate, 1);
-    ImGui::SameLine();
-    ImGui::RadioButton("Mesh", &simulate, 0);
-
-    ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);
-    ImGui::SliderFloat3("Camera Eye", &SceneData.eye_w[0], -100.0f, 100.0f);
-    ImGui::SliderFloat3("Camera Center", &center[0], -100.0f, 100.0f);
-
-    ImGui::SliderFloat("Particle Size", &simulation_radius, 10.0f, 100.0f);
-    
-    ImGui::SliderFloat3("Light position", &SceneData.light_w.x, -10.0f, 10.0f);
 
     // Control Material colors
     ImGui::ColorEdit3("Outline Color", &MaterialData.outline.r, 0);
@@ -211,6 +198,26 @@ void draw_gui(GLFWwindow* window)
     ImGui::ColorEdit3("Toon Midtone Color", &MaterialData.midtone.r, 0);
     ImGui::ColorEdit3("Toon Highlight Color", &MaterialData.highlight.r, 0);
     ImGui::SliderFloat("Specular", &MaterialData.shininess, 0.0f, 1.0f);
+
+    if (paint_mode == render_style::paint) {
+        // add paint options
+        ImGui::SliderFloat("Brush Size", &MaterialData.brush_scale, 0.0001f, 2.0f);
+    }
+
+    ImGui::RadioButton("Simulate", &simulate, 1);
+    ImGui::SameLine();
+    ImGui::RadioButton("Mesh", &simulate, 0);
+
+    if (simulate) {
+        // add simulation options 
+        ImGui::SliderFloat("Particle Size", &simulation_radius, 10.0f, 100.0f);
+    }
+
+    ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);
+    ImGui::SliderFloat3("Camera Eye", &SceneData.eye_w[0], -100.0f, 100.0f);
+    ImGui::SliderFloat3("Camera Center", &center[0], -100.0f, 100.0f);
+
+    ImGui::SliderFloat3("Light position", &SceneData.light_w.x, -10.0f, 10.0f);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();

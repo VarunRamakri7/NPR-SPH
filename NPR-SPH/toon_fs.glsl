@@ -3,6 +3,7 @@
 
 layout(binding = 0) uniform sampler2D bw_tex; 
 
+layout(location = 1) uniform int style;
 layout(location = 2) uniform int pass;
 layout(location = 3) uniform int mode;
 layout(location = 6) uniform float scale;

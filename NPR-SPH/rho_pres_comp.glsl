@@ -10,6 +10,7 @@
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(location = 1) uniform float time;
+layout(location = 6) uniform float scale;
 
 struct Particle
 {

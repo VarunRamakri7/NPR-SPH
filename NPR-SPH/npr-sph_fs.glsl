@@ -1,6 +1,8 @@
 #version 440
 
 layout(location = 1) uniform float time;
+layout(location = 6) uniform float scale;
+
 
 in vec4 particle_pos;
 

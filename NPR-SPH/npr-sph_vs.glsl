@@ -2,6 +2,8 @@
 
 layout(location = 0) uniform mat4 M;
 layout(location = 1) uniform float time;
+layout(location = 6) uniform float scale;
+
 
 layout(std140, binding = 0) uniform SceneUniforms
 {

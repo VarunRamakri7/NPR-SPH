@@ -3,8 +3,7 @@
 
 layout(binding = 0) uniform sampler2D fbo_tex; 
 
-//layout(location = 1) uniform float time;
-layout(location = 2) uniform int pass;
+layout(location = 6) uniform float scale;
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -47,10 +46,12 @@ vec4 blur(int rad, sampler2D tex);
 void main(void)
 {   
     fragcolor = celshading();
+    // random from noise function
+//    float r = fract(sin(dot(inData.tex_coord,vec2(12.9898,78.233))) * 43758.5453)+0.001;
+//    fragcolor *= r;
     fragcolor.a = texelFetch(fbo_tex, ivec2(gl_FragCoord), 0).b * inData.color;
     fragcolor *= outline();
     fragcolor.rgb = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/4, 4), 0, 0.4));
-
     // noise in color TODO 
 
 }

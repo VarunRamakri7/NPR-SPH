@@ -35,42 +35,52 @@ const int init_window_width = 720;
 const int init_window_height = 720;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
-static const std::string vertex_shader("npr-sph_vs.glsl");
-static const std::string fragment_shader("npr-sph_fs.glsl");
+GLuint shader_program = -1;
+GLuint compute_programs[3] = { -1, -1, -1 };
+GLuint particle_position_vao = -1;
+//GLuint particle_velocity_vao = -1;
+GLuint particles_ssbo = -1;
+
+// compute shaders
 static const std::string rho_pres_com_shader("rho_pres_comp.glsl");
 static const std::string force_comp_shader("force_comp.glsl");
 static const std::string integrate_comp_shader("integrate_comp.glsl");
 
-GLuint shader_program = -1;
-GLuint compute_programs[3] = { -1, -1, -1 };
-GLuint particle_position_vao = -1;
-GLuint particles_ssbo = -1;
+// shaders
+enum render_style { toon, paint };
+GLuint toon_shader_program = -1;
+GLuint brush_shader_program = -1;
 static const std::string toon_vs("toon_vs.glsl");
 static const std::string toon_fs("toon_fs.glsl");
 static const std::string brush_gs("brush_gs.glsl");
 static const std::string brush_fs("brush_fs.glsl");
 static const std::string brush_vs("brush_vs.glsl");
 
-//glm::vec3 eye = glm::vec3(10.0f, 2.0f, 0.0f);
-glm::vec3 center = glm::vec3(0.0f, -1.0f, 0.0f);
 float angle = 0.75f;
 float scale = 2.5f;
 float aspect = 1.0f;
 bool recording = false;
 int simulate = 0;
-enum render_style {toon, paint};
-GLuint toon_shader_program = -1;
-GLuint brush_shader_program = -1;
+float mesh_d = 0.0f;
+float mesh_range = 0.0f;
+float simulation_radius = 10.0f;
+glm::vec3 center = glm::vec3(0.0f);	//world-space eye position
+int paint_mode = render_style::toon;
 
+// mesh TODO change to something else
 static const std::string mesh_name = "Amago0.obj";
 
 GLuint fbo = -1;
 GLuint fbo_tex = -1;
 GLuint depthrenderbuffer;
+GLuint texture_id = -1; //Texture map for mesh
 
-float mesh_d = 0.0f;
-float mesh_range = 0.0f;
+GLuint scene_ubo = -1;
+GLuint constants_ubo = -1;
+GLuint boundary_ubo = -1;
+GLuint material_ubo = -1;
 
+MeshData mesh_data;
 
 struct Particle
 {
@@ -85,7 +95,7 @@ struct SceneUniforms
 {
     glm::mat4 P;	//camera projection * view matrix
     glm::mat4 V;
-    glm::vec4 eye_w;	//world-space eye position
+    glm::vec4 eye_w = glm::vec4(10.0f, 2.0f, 0.0f, -10.f);	//world-space eye position
     glm::vec4 light_w = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f); //world-space light position
 } SceneData;
 
@@ -110,13 +120,6 @@ struct MaterialUniforms
     glm::vec4 highlight = glm::vec4(1.0f); // Specular material color
 } MaterialData;
 
-GLuint scene_ubo = -1;
-GLuint constants_ubo = -1;
-GLuint boundary_ubo = -1;
-GLuint material_ubo = -1;
-
-GLuint noise_id = -1; //noise texture for hair placement
-
 namespace UboBinding
 {
     int scene = 0;
@@ -135,17 +138,9 @@ namespace UniformLocs
     int mesh_d = 4;
     int mesh_range = 5;
     int scale = 6;
+    int sim_rad = 7;
 }
 
-GLuint texture_id = -1; //Texture map for mesh
-MeshData mesh_data;
-
-//float angle = 0.0f;
-//float scale = 1.0f;
-//bool recording = false;
-int paint_mode = render_style::toon;
-
-//For an explanation of this program's structure see https://www.glfw.org/docs/3.3/quick.html 
 
 void draw_gui(GLFWwindow* window)
 {
@@ -189,14 +184,21 @@ void draw_gui(GLFWwindow* window)
     ImGui::Image((void*)fbo_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
 
     ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
-    ImGui::RadioButton("ToonShader", &paint_mode, render_style::toon);
-    ImGui::RadioButton("Paint", &paint_mode, render_style::paint);
-    ImGui::RadioButton("Simulate", &simulate, 1);
-    ImGui::RadioButton("Mesh", &simulate, 0);
-    ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);
-    ImGui::SliderFloat3("Camera Eye", &SceneData.eye_w[0], -10.0f, 10.0f);
-    ImGui::SliderFloat3("Camera Center", &center[0], -10.0f, 10.0f);
 
+    ImGui::RadioButton("ToonShader", &paint_mode, render_style::toon);
+    ImGui::SameLine();
+    ImGui::RadioButton("Paint", &paint_mode, render_style::paint);
+
+    ImGui::RadioButton("Simulate", &simulate, 1);
+    ImGui::SameLine();
+    ImGui::RadioButton("Mesh", &simulate, 0);
+
+    ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);
+    ImGui::SliderFloat3("Camera Eye", &SceneData.eye_w[0], -100.0f, 100.0f);
+    ImGui::SliderFloat3("Camera Center", &center[0], -100.0f, 100.0f);
+
+    ImGui::SliderFloat("Particle Size", &simulation_radius, 10.0f, 100.0f);
+    
     ImGui::SliderFloat4("Light position", &SceneData.light_w.x, -1.0f, 1.0f);
 
     // Control Material colors
@@ -221,27 +223,23 @@ void draw_gui(GLFWwindow* window)
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
- 
-// This function gets called every time the scene gets redisplayed
-void display(GLFWwindow* window)
-{
-    //Clear the screen to the color previously specified in the glClearColor(...) call.
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+void sendUniforms() {
 
     glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(scale * mesh_data.mScaleFactor));
-    glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w.x, SceneData.eye_w.y, SceneData.eye_w.z), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    // always looking at origin 
+    glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w.x, SceneData.eye_w.y, SceneData.eye_w.z), center, glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 P = glm::perspective(glm::pi<float>() / 4.0f, aspect, 0.1f, 100.0f);
     SceneData.P = P;
     SceneData.V = V;
-
-    // toon shader
-    glUseProgram(toon_shader_program);
 
     //Set uniforms
     glUniformMatrix4fv(UniformLocs::M, 1, false, glm::value_ptr(M));
     glUniform1i(UniformLocs::mode, simulate);
     glUniform1f(UniformLocs::mesh_d, mesh_d);
     glUniform1f(UniformLocs::mesh_range, mesh_range);
+    glUniform1f(UniformLocs::sim_rad, simulation_radius);
+    glUniform1f(UniformLocs::scale, scale);
 
     glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo); //Bind the OpenGL UBO before we update the data.
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SceneData), &SceneData); //Upload the new uniform values.
@@ -254,6 +252,15 @@ void display(GLFWwindow* window)
 
     glBindBuffer(GL_UNIFORM_BUFFER, material_ubo); //Bind the OpenGL UBO before we update the data.
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MaterialUniforms), &MaterialData); //Upload the new uniform values.
+}
+ 
+// This function gets called every time the scene gets redisplayed
+void display(GLFWwindow* window)
+{
+    //Clear the screen to the color previously specified in the glClearColor(...) call.
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    sendUniforms();
 
     // Use compute shader
     if (simulate)
@@ -269,86 +276,73 @@ void display(GLFWwindow* window)
         glUseProgram(compute_programs[2]); // Use integration calculation program
         glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-        //
-        glUseProgram(toon_shader_program);
-        // pass 1: render mesh depth into texture and get alpha mask
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glUniform1i(UniformLocs::pass, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
-        glBindTextureUnit(0, fbo_tex); // TODO make it comp name
-        glDrawBuffer(GL_COLOR_ATTACHMENT0); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //
-        glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUniform1i(UniformLocs::pass, 1);
-        glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     else {
         // npr on mesh
         glBindVertexArray(mesh_data.mVao);
-
-        // pass 1: render mesh depth into texture and get alpha mask
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glUniform1i(UniformLocs::pass, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
-        glBindTextureUnit(0, fbo_tex); // TODO make it comp name
-        glDrawBuffer(GL_COLOR_ATTACHMENT0); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // draw fish into texture
-        glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glUniform1i(UniformLocs::pass, 1);
-        glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
-        // unbind
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        // add brush
-        if (paint_mode == render_style::paint) {
-
-            // draw the bw into fbo comp tex with extra stuff -> alpha 
-
-            //geometry_shader draw brush strokes
-            glUseProgram(brush_shader_program);
-
-            // send selected paint mode
-            glUniform1i(UniformLocs::mode, simulate);
-            glUniform1f(UniformLocs::mesh_d, mesh_d);
-            glUniform1f(UniformLocs::mesh_range, mesh_range);
-            glUniform1f(UniformLocs::scale, scale);
-
-            //Set uniforms
-            glUniformMatrix4fv(UniformLocs::M, 1, false, glm::value_ptr(M));
-
-            glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo); //Bind the OpenGL UBO before we update the data.
-            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SceneData), &SceneData); //Upload the new uniform values.
-            //glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
-
-            glBindBuffer(GL_UNIFORM_BUFFER, material_ubo); //Bind the OpenGL UBO before we update the data.
-            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MaterialUniforms), &MaterialData); //Upload the new uniform values.
-            //glBindBuffer(GL_UNIFORM_BUFFER, 0); //unbind the ubo
-            glBindVertexArray(mesh_data.mVao);
-
-            glEnable(GL_BLEND);
-            glDepthMask(GL_FALSE);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glBindTextureUnit(0, fbo_tex);
-            glUniform1i(UniformLocs::pass, 0);
-            glDrawElements(GL_POINTS, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
-            glDisable(GL_BLEND);
-            glDepthMask(GL_TRUE);
-            // unbind
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        }
     }
 
+    // toon shader
+    glUseProgram(toon_shader_program);
+    //Set uniforms
+    sendUniforms();
+
+    // pass 1: render mesh depth into texture and get alpha mask
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glUniform1i(UniformLocs::pass, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
+    glBindTextureUnit(0, fbo_tex); // TODO make it comp name
+    glDrawBuffer(GL_COLOR_ATTACHMENT0); //Out variable in frag shader will be written to the texture attached to GL_COLOR_ATTACHMENT0.
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // draw fish into texture
+    if (simulate)
+    {
+        glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
+    }
+    else {
+        glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUniform1i(UniformLocs::pass, 1);
+    if (simulate)
+    {
+        glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
+    }
+    else {
+        glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+    }
+    // unbind
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // add brush
+    if (paint_mode == render_style::paint) {
+
+        // draw the bw into fbo comp tex with extra stuff -> alpha 
+
+        //geometry_shader draw brush strokes
+        glUseProgram(brush_shader_program);
+        sendUniforms();
+    
+        glEnable(GL_BLEND);
+        glDepthMask(GL_FALSE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glBindTextureUnit(0, fbo_tex);
+        if (simulate)
+        {
+            glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
+        }
+        else {
+            glDrawElements(GL_POINTS, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+        }
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
+        // unbind
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
     
     // GRAB frame before gui draws
     if (recording == true)
@@ -548,6 +542,13 @@ void initOpenGL()
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), nullptr); // Bind buffer containing particle positions to VAO
     glEnableVertexAttribArray(0); // Enable attribute with location = 0 (vertex position) for VAO
 
+    /*glGenVertexArrays(1, &particle_velocity_vao);
+    glBindVertexArray(particle_velocity_vao);*/
+
+    //glBindBuffer(GL_ARRAY_BUFFER, particles_ssbo);
+    //glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), nullptr); // Bind buffer containing particle velocity to VAO
+    //glEnableVertexAttribArray(1); // Enable attribute with location = 0 (vertex position) for VAO
+
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind SSBO
     glBindVertexArray(0); // Unbind VAO
     //glBindVertexArray(particle_position_vao);
@@ -556,16 +557,10 @@ void initOpenGL()
     mesh_data = LoadMesh(mesh_name);
     glBindVertexArray(0); // Unbind VAO
 
-    // get mesh orthogonal tangents 
-
-    // get distance between the 2 
-
-    // do we only want z ? but we will have to rotate it anyways > this is local tho 
-    mesh_d = 0.0 - mesh_data.mBbMin.z;
-    // get d = 0 - min 
-    // add d to vertex to offset everything to 0 
+    // get mesh depth range from bounding box to compute normalized fading factor
+    mesh_d = - mesh_data.mBbMin.z;
+    // add mesh_d to vertex to offset everything to 0 and divide all by abs(min-max) 
     mesh_range = glm::abs(mesh_data.mBbMin.z - mesh_data.mBbMax.z);
-    // divide all by abs(min-max) 
 
     // get biggest texture size needed, so resize wont clip textures
     int count;

@@ -1,8 +1,12 @@
 #version 440   
+
 layout(location = 0) uniform mat4 M;
-//layout(location = 1) uniform float time;
 layout(location = 4) uniform float mesh_d;
 layout(location = 5) uniform float mesh_range;
+layout(location = 3) uniform int mode;
+layout(location = 7) uniform float sim_rad;
+layout(location = 6) uniform float scale;
+
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -36,4 +40,19 @@ void main(void)
 	// its just the edge of the model, we are looking at the z depth within the model (model space)
 	outData.depth = ((pos_attrib.z + mesh_d) / mesh_range);
 	
+	if (mode == 0) {
+		// mesh
+		outData.nw = vec3(M*vec4(normal_attrib, 0.0));	//world-space normal normal vector
+		outData.tex_coord = vec2(1.0,0.0) ;
+		// its just the edge of the model, we are looking at the z depth within the model (model space)
+		outData.depth = ((pos_attrib.z + mesh_d) / mesh_range);
+	} else {
+		// simulate
+		outData.nw = vec3(1.0,0.0,0.0);	//world-space normal normal vector
+		outData.tex_coord = vec2(1.0,0.0) ;
+		// its just the edge of the model, we are looking at the z depth within the model (model space)
+		outData.depth = 0.0f;
+		gl_PointSize = sim_rad;
+	} 
+
 }

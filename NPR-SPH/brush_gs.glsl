@@ -4,11 +4,10 @@ layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
 layout(location = 0) uniform mat4 M;
-
-//layout(location = 1) uniform float time;
-layout(location = 2) uniform int pass;
-layout(location = 3) uniform int paint_mode;
 layout(location = 6) uniform float scale;
+layout(location = 7) uniform float sim_rad;
+layout(location = 3) uniform int mode;
+
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -39,14 +38,15 @@ out VertexData
 
 void main() {    
 
+    // sim -> use sim radius as fragment paint 
     const vec2 coordinates [] = vec2 [] (
         vec2 (-0.05f, -0.02f),
         vec2 (0.05f, -0.02f),
         vec2 (-0.05f, 0.02f),
         vec2 (0.05f, 0.02f)
     );
+
     // ALLOW CHANGE OF BRUSH SIZE/ SHAPE? 
-    // brush on surface not screen!!!!!!
     float opaque_min = 0.3;
     float opaque_max = 0.8;
     float trans_min = 0.0;
@@ -59,8 +59,6 @@ void main() {
 	    outData.pw = inData[i].pw;
 	    outData.depth = inData[i].depth;
 	    outData.nw = inData[i].nw;
-
-        // WHY ARE SOME IN THE SAME AREA
 
         // random from noise function
         float r = fract(sin(dot(inData[i].tex_coord,vec2(12.9898,78.233))) * 43758.5453)+0.001;

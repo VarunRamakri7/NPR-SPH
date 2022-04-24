@@ -5,6 +5,8 @@ layout(binding = 0) uniform sampler2D bw_tex;
 
 layout(location = 2) uniform int pass;
 layout(location = 3) uniform int mode;
+layout(location = 6) uniform float scale;
+
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -54,12 +56,13 @@ vec3 desaturate(vec3 color, float amount);
 void main(void)
 {   
     if (mode == 1) {
-    // circle
-    float rad = 0.35;
-    float r = length(gl_PointCoord - vec2(rad));
-    if (r >= rad) {
-    discard;
-    }
+        // simulate
+        // make circle
+        float rad = 0.35;
+        float r = length(gl_PointCoord - vec2(rad));
+        if (r >= rad) {
+            discard;
+        }
     }
     
     fragcolor = celshading();
@@ -87,7 +90,6 @@ vec4 celshading() {
         vec2 p = 2.0*gl_PointCoord.xy - vec2(1.0);
         float z = sqrt(1.0 - dot(p, p));
         nw = normalize(vec3(p, z)); // normalize or no? 
-        //nw = normalize(vec3(1.0f - pow (gl_FragCoord.x, 2) - pow(gl_FragCoord.y, 2)));
     }
     vec3 lw = normalize(light_w.xyz - inData.pw.xyz); //world-space unit light vector
     vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	//world-space unit view vector

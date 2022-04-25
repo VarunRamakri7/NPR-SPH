@@ -1,13 +1,12 @@
 #version 440
 #define PI 3.1415926538
 
-layout(binding = 0) uniform sampler2D bw_tex; 
+layout(binding = 0) uniform sampler2D fbo_tex; 
 
 layout(location = 1) uniform int style;
 layout(location = 2) uniform int pass;
 layout(location = 3) uniform int mode;
 layout(location = 6) uniform float scale;
-
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
@@ -41,6 +40,7 @@ vec4 La = vec4(vec3(0.85f), 1.0f); // Ambient light color
 vec4 Ld = vec4(vec3(0.5f), 1.0f); // Diffuse light color
 vec4 Ls = vec4(1.0f); // Specular light color
 
+// sobel filters
 mat3 sx = mat3( 
     1.0, 2.0, 1.0, 
     0.0, 0.0, 0.0, 
@@ -54,17 +54,20 @@ mat3 sy = mat3(
 
 vec4 outline();
 vec4 celshading();
-vec3 desaturate(vec3 color, float amount);
 vec4 phong();
 
 void main(void)
 {   
-    fragcolor = celshading();
-    if (style == 1) {
-        // paint -> use phong
-        fragcolor = phong();
+    // style
+    if (style == 0) {
+        // cell shading
+        fragcolor = celshading();
+    } else {
+        // paint 
+        fragcolor = mix(celshading(), phong(), 0.5);
     }
 
+    // output
     if (pass == 0) {
         // outputs to texture
 
@@ -75,27 +78,30 @@ void main(void)
 
     } else if (pass == 1) {
         // outputs to screen
+
         vec3 fill = outline().rgb;
         vec3 outlines = vec3(1.0) - fill; // inverse of fill
         fragcolor = vec4((outline_color.rgb * outlines) + (fragcolor.rgb * fill), 1.0);
     }
+
 }
 
+// repeated code in brush_fs
 vec4 celshading() {
     // Compute Cook-Torrance Lighting
-    const float eps = 1e-8; //small value to avoid division by 0
+    const float eps = 1e-8; // small value to avoid division by 0
 
-    vec3 nw = normalize(inData.nw); //world-space unit normal vector
+    vec3 nw = normalize(inData.nw); // world-space unit normal vector
     if (mode == 1) {
-        // need to recalc normal
+        // need to recalculate normal (2d particles)
         vec2 p = 2.0*gl_PointCoord.xy - vec2(1.0);
         float mag = dot(p, p); 
         if (mag > 1.0) discard; // discard if outside of radius length
         float z = sqrt(1.0 - mag);
-        nw = normalize(vec3(p, z)); // normalize or no? 
+        nw = normalize(vec3(p, z)); 
     }
-    vec3 lw = normalize(light_w.xyz - inData.pw.xyz); //world-space unit light vector
-    vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	//world-space unit view vector
+    vec3 lw = normalize(light_w.xyz - inData.pw.xyz); // world-space unit light vector
+    vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	// world-space unit view vector
     vec3 hw = normalize(lw + vw); // Halfway vector
 
     // reflect
@@ -115,17 +121,18 @@ vec4 celshading() {
     }
 
     return fragcolor;
-
 }
 
 vec4 outline() {
-    // add outlines (consistent thicknesS)
+    // add outlines with consistent thickness using Sobel
     mat3 I;
 
     for (int i=0; i< 3; i++) {
         for (int j=0; j<3; j++) {
-            I[i][j] = texelFetch(bw_tex, ivec2(gl_FragCoord) + ivec2(i-1 ,j-1), 0).g; 
-           
+            // finding outline from contours (depth)
+            I[i][j] = texelFetch(fbo_tex, ivec2(gl_FragCoord) + ivec2(i-1 ,j-1), 0).g; 
+            // finding outline from colors (BW image)
+            // I[i][j] = texelFetch(fbo_tex, ivec2(gl_FragCoord) + ivec2(i-1 ,j-1), 0).g; 
         }
     }
     
@@ -136,7 +143,6 @@ vec4 outline() {
     float g = sqrt(pow(gx, 2.0) + pow(gy, 2.0)); // with light outline
 
     // 0.1 threshold (otherwise will get contour)
-    // MAKE THIS THRESHOLD A UNIFORM?
     if (g > 0.1) {
         g = 1.0;
     } else {
@@ -146,25 +152,20 @@ vec4 outline() {
     return vec4(1.0 - vec3(g, g, g), 1.0);
 }
 
-vec3 desaturate(vec3 color, float amount)
-{
-    vec3 gray = vec3(dot(vec3(1.0), color));
-    return vec3(mix(color, gray, amount));
-}
-
+// repeated code in brush_fs.glsl
 vec4 phong() {
-     //Compute per-fragment Phong lighting	
+     // Compute per-fragment Phong lighting	
 
-      const float eps = 1e-8; //small value to avoid division by 0
+      const float eps = 1e-8; // small value to avoid division by 0
       float d = distance(light_w.xyz, inData.pw.xyz);
-      float atten = 1.0/(d*d+eps); //d-squared attenuation
+      float atten = 1.0/(d*d+eps); // d-squared attenuation
 
-      vec3 nw = normalize(inData.nw);			//world-space unit normal vector
-      vec3 lw = normalize(light_w.xyz - inData.pw.xyz);	//world-space unit light vector
+      vec3 nw = normalize(inData.nw); // world-space unit normal vector
+      vec3 lw = normalize(light_w.xyz - inData.pw.xyz);	// world-space unit light vector
       vec4 diffuse_term = atten*midtone*max(0.0, dot(nw, lw));
 
-      vec3 vw = normalize(eye_w.xyz - inData.pw.xyz);	//world-space unit view vector
-      vec3 rw = reflect(-lw, nw);	//world-space unit reflection vector
+      vec3 vw = normalize(eye_w.xyz - inData.pw.xyz); // world-space unit view vector
+      vec3 rw = reflect(-lw, nw); // world-space unit reflection vector
 
       vec4 specular_term = highlight*pow(max(0.0, dot(rw, vw)), shininess);
 

@@ -5,44 +5,42 @@ layout(location = 3) uniform int mode;
 layout(location = 4) uniform float mesh_d;
 layout(location = 5) uniform float mesh_range;
 layout(location = 7) uniform float sim_rad;
-layout(location = 6) uniform float scale;
-
 
 layout(std140, binding = 0) uniform SceneUniforms
 {
-   mat4 P;	//camera projection * view matrix
+   mat4 P;	// camera projection * view matrix
    mat4 V;
-   vec4 eye_w;	//world-space eye position
-   vec4 light_w; //world-space light position
+   vec4 eye_w;	// world-space eye position
+   vec4 light_w; // world-space light position
 };
 
-in vec3 pos_attrib; //this variable holds the position of mesh vertices
-in vec3 normal_attrib;  // velocity 
-in vec2 tex_coord_attrib;
+in vec3 pos_attrib; // this variable holds the position of mesh vertices
+in vec3 normal_attrib; // only available for meshes 
+in vec2 tex_coord_attrib; // only available for meshes
 
 
 out VertexData
 {
-   vec3 pw;       //world-space vertex position
-   vec3 nw;   //world-space normal vector
+   vec3 pw;       // world-space vertex position
+   vec3 nw;   // world-space normal vector
    float depth;
    vec2 tex_coord;
 } outData;
 
 void main(void)
 {
-	gl_Position = P*V*M*vec4(pos_attrib, 1.0); //transform vertices and send result into pipeline
-	outData.pw = vec3(M * vec4(pos_attrib, 1.0)); //world-space vertex position
-	float s = scale;
+	gl_Position = P*V*M*vec4(pos_attrib, 1.0); // transform vertices and send result into pipeline
+	outData.pw = vec3(M * vec4(pos_attrib, 1.0)); // world-space vertex position
+
 	if (mode == 0) {
 		// mesh
-		outData.nw = vec3(M* vec4(normal_attrib, 0.0));	//world-space normal normal vector
+		outData.nw = vec3(M* vec4(normal_attrib, 0.0));	// world-space normal normal vector
 		outData.tex_coord = tex_coord_attrib;
 		// its just the edge of the model, we are looking at the z depth within the model (model space)
 		outData.depth = ((pos_attrib.z + mesh_d) / mesh_range);
 	} else {
 		// simulate
-		outData.nw = normal_attrib;	//world-space normal normal vector
+		outData.nw = normal_attrib;	// world-space normal normal vector
 		outData.tex_coord = vec2(1.0,0.0);
 		// its just the edge of the model, we are looking at the z depth within the model (model space)
 		outData.depth = 1.0f; // flat

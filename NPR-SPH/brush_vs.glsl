@@ -11,7 +11,7 @@ layout(std140, binding = 0) uniform SceneUniforms
 {
    mat4 P;	//camera projection * view matrix
    mat4 V;
-   vec4 eye_w;	//world-space eye position
+   vec4 eye_w;	//world-space eye position 
    vec4 light_w; //world-space light position
 };
 

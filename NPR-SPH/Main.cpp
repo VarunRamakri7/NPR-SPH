@@ -1,6 +1,6 @@
 #include <windows.h>
 
-//When using this as a template, be sure to make these changes in the new project: 
+// 
 //1. In Debugging properties set the Environment to PATH=%PATH%;$(SolutionDir)\lib;
 //2. Change window_title below
 //3. Copy assets (mesh and texture) to new project directory
@@ -71,7 +71,7 @@ int paint_mode = render_style::toon;
 MeshData mesh_data;
 int mesh_id = 0; // purdue_mesh
 int display_mesh = 0;
-const static std::string mesh_options[2] = { "purdueobj.obj" , "scene.obj" };
+const static std::string mesh_options[3] = { "purdueobj.obj" , "scene.obj", "knot.obj" };
 
 GLuint fbo = -1;
 GLuint fbo_tex = -1;
@@ -221,6 +221,7 @@ void draw_gui(GLFWwindow* window)
         // add mesh options
         ImGui::RadioButton("Purdue", &mesh_id, 0);
         ImGui::RadioButton("Landscape", &mesh_id, 1);
+        ImGui::RadioButton("Knot", &mesh_id, 2);
     }
 
     ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);

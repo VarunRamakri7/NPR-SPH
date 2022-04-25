@@ -221,7 +221,7 @@ void draw_gui(GLFWwindow* window)
 
 	ImGui::RadioButton("Mesh", &obj_mode, 0);
 	ImGui::SameLine();
-	ImGui::RadioButton("Simulate", &obj_mode, 1);
+	ImGui::RadioButton("SPH", &obj_mode, 1);
 
 	if (obj_mode == 1) {
 		// add simulation options 

@@ -92,64 +92,64 @@ int style = render_style::toon;
 
 struct Particle
 {
-    glm::vec4 pos;
-    glm::vec4 vel;
-    glm::vec4 force;
-    glm::vec4 extras; // 0 - rho, 1 - pressure, 2 - age
+	glm::vec4 pos;
+	glm::vec4 vel;
+	glm::vec4 force;
+	glm::vec4 extras; // 0 - rho, 1 - pressure, 2 - age
 };
 
 // These uniform structure mirrors the uniform block declared in the shader
 struct SceneUniforms
 {
-    glm::mat4 P;	// camera projection * view matrix
-    glm::mat4 V;
-    glm::vec4 eye_w = glm::vec4(10.0f, 2.0f, 0.0f, -10.f);	// world-space eye position
-    glm::vec4 light_w = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f); // world-space light position
+	glm::mat4 P;	// camera projection * view matrix
+	glm::mat4 V;
+	glm::vec4 eye_w = glm::vec4(10.0f, 2.0f, 0.0f, -10.f);	// world-space eye position
+	glm::vec4 light_w = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f); // world-space light position
 } SceneData;
 
 struct ConstantsUniform
 {
-    float mass = 0.02f; // Particle Mass
-    float smoothing_coeff = 4.0f; // Smoothing length coefficient for neighborhood
-    float visc = 2000.0f; // Fluid viscosity
-    float resting_rho = 1000.0f; // Resting density
+	float mass = 0.02f; // Particle Mass
+	float smoothing_coeff = 4.0f; // Smoothing length coefficient for neighborhood
+	float visc = 2000.0f; // Fluid viscosity
+	float resting_rho = 1000.0f; // Resting density
 }ConstantsData;
 
 struct BoundaryUniform
 {
-    glm::vec4 upper = glm::vec4(0.25f, 1.0f, 0.25f, 0.0f);
-    glm::vec4 lower = glm::vec4(-0.25f, -0.5f, -0.25f, 0.0f);
+	glm::vec4 upper = glm::vec4(0.25f, 1.0f, 0.25f, 0.0f);
+	glm::vec4 lower = glm::vec4(-0.25f, -0.5f, -0.25f, 0.0f);
 }BoundaryData;
 
 struct MaterialUniforms
 {
-    glm::vec4 dark = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Ambient material color
-    glm::vec4 midtone = glm::vec4(glm::vec3(0.5f), 1.0); // Diffuse material color
-    glm::vec4 highlight = glm::vec4(glm::vec3(1.0f), 1.0); // Specular material color
-    glm::vec4 outline = glm::vec4(glm::vec3(0.0f), 1.0);
-    float shininess = 0.3;
-    float brush_scale = 1.0;
+	glm::vec4 dark = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Ambient material color
+	glm::vec4 midtone = glm::vec4(glm::vec3(0.5f), 1.0); // Diffuse material color
+	glm::vec4 highlight = glm::vec4(glm::vec3(1.0f), 1.0); // Specular material color
+	glm::vec4 outline = glm::vec4(glm::vec3(0.0f), 1.0);
+	float shininess = 0.3;
+	float brush_scale = 1.0;
 } MaterialData;
 
 namespace UboBinding
 {
-    int scene = 0;
-    int constants = 1;
-    int boundary = 2;
-    int material = 3;
+	int scene = 0;
+	int constants = 1;
+	int boundary = 2;
+	int material = 3;
 }
 
 // Locations for the uniforms which are not in uniform blocks
 namespace UniformLocs
 {
-    int M = 0; //model matrix
-    int style = 1; // toon/cell or paint
-    int pass = 2;
-    int mode = 3; // mesh or simulation
-    int mesh_d = 4; // mesh depth
-    int mesh_range = 5; // mesh range
-    int scale = 6;
-    int sim_rad = 7; // particle radius 
+	int M = 0; //model matrix
+	int style = 1; // toon/cell or paint
+	int pass = 2;
+	int mode = 3; // mesh or simulation
+	int mesh_d = 4; // mesh depth
+	int mesh_range = 5; // mesh range
+	int scale = 6;
+	int sim_rad = 7; // particle radius 
 }
 
 void init_particles();
@@ -280,7 +280,7 @@ void sendUniforms() {
 	glBindBuffer(GL_UNIFORM_BUFFER, material_ubo); //Bind the OpenGL UBO before we update the data.
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MaterialUniforms), &MaterialData); //Upload the new uniform values.
 }
- 
+
 // This function gets called every time the scene gets redisplayed
 void display(GLFWwindow* window)
 {
@@ -387,8 +387,8 @@ void display(GLFWwindow* window)
 
 void idle()
 {
-    static float time_sec = 0.0f;
-    time_sec += 1.0f / 60.0f;
+	static float time_sec = 0.0f;
+	time_sec += 1.0f / 60.0f;
 }
 
 void prepare_shader(GLuint* shader_name, const char* vShaderFile, const char* gShaderFile, const char* fShaderFile)
@@ -427,58 +427,58 @@ void reload_mesh()
 
 void reload_shader()
 {
-    prepare_shader(&toon_shader_program, toon_vs.c_str(), NULL, toon_fs.c_str());
-    prepare_shader(&brush_shader_program, brush_vs.c_str(), brush_gs.c_str(), brush_fs.c_str());
+	prepare_shader(&toon_shader_program, toon_vs.c_str(), NULL, toon_fs.c_str());
+	prepare_shader(&brush_shader_program, brush_vs.c_str(), brush_gs.c_str(), brush_fs.c_str());
 
-    // Load compute shaders
-    GLuint compute_shader_handle = InitShader(rho_pres_com_shader.c_str());
-    if (compute_shader_handle != -1)
-    {
-        compute_programs[0] = compute_shader_handle;
-    }
+	// Load compute shaders
+	GLuint compute_shader_handle = InitShader(rho_pres_com_shader.c_str());
+	if (compute_shader_handle != -1)
+	{
+		compute_programs[0] = compute_shader_handle;
+	}
 
-    compute_shader_handle = InitShader(force_comp_shader.c_str());
-    if (compute_shader_handle != -1)
-    {
-        compute_programs[1] = compute_shader_handle;
-    }
+	compute_shader_handle = InitShader(force_comp_shader.c_str());
+	if (compute_shader_handle != -1)
+	{
+		compute_programs[1] = compute_shader_handle;
+	}
 
-    compute_shader_handle = InitShader(integrate_comp_shader.c_str());
-    if (compute_shader_handle != -1)
-    {
-        compute_programs[2] = compute_shader_handle;
-    }
+	compute_shader_handle = InitShader(integrate_comp_shader.c_str());
+	if (compute_shader_handle != -1)
+	{
+		compute_programs[2] = compute_shader_handle;
+	}
 }
 
 // This function gets called when a key is pressed
 void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (action == GLFW_PRESS)
-    {
-        switch (key)
-        {
-        case 'r':
-        case 'R':
-            reload_shader();
+	if (action == GLFW_PRESS)
+	{
+		switch (key)
+		{
+		case 'r':
+		case 'R':
 			init_particles();
-            break;
+			reload_shader();
+			break;
 
-        case 'p':
-        case 'P':
-            simulate = !simulate;
-            break;
+		case 'p':
+		case 'P':
+			simulate = !simulate;
+			break;
 
-        case GLFW_KEY_ESCAPE:
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-            break;
-        }
-    }
+		case GLFW_KEY_ESCAPE:
+			glfwSetWindowShouldClose(window, GLFW_TRUE);
+			break;
+		}
+	}
 }
 
 void resize(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height); // Set viewport to cover entire framebuffer
-    aspect = float(width) / float(height); // Set aspect ratio
+	glViewport(0, 0, width, height); // Set viewport to cover entire framebuffer
+	aspect = float(width) / float(height); // Set aspect ratio
 }
 
 /// <summary>
@@ -487,21 +487,21 @@ void resize(GLFWwindow* window, int width, int height)
 /// <returns>Vector of positions for the grid</returns>
 std::vector<glm::vec4> make_grid()
 {
-    std::vector<glm::vec4> positions;
+	std::vector<glm::vec4> positions;
 
-    // 20x20x20 Cube of particles within [0, 0.095] on all axes
-    for (int i = 0; i < 20; i++)
-    {
-        for (int j = 0; j < 20; j++)
-        {
-            for (int k = 0; k < 20; k++)
-            {
-                positions.push_back(glm::vec4((float)i * PARTICLE_RADIUS, (float)j * PARTICLE_RADIUS, (float)k * PARTICLE_RADIUS, 1.0f));
-            }
-        }
-    }
+	// 20x20x20 Cube of particles within [0, 0.095] on all axes
+	for (int i = 0; i < 20; i++)
+	{
+		for (int j = 0; j < 20; j++)
+		{
+			for (int k = 0; k < 20; k++)
+			{
+				positions.push_back(glm::vec4((float)i * PARTICLE_RADIUS, (float)j * PARTICLE_RADIUS, (float)k * PARTICLE_RADIUS, 1.0f));
+			}
+		}
+	}
 
-    return positions;
+	return positions;
 }
 
 /// <summary>
@@ -543,169 +543,169 @@ void init_particles()
 // Initialize OpenGL state. This function only gets called once.
 void initOpenGL()
 {
-    glewInit();
+	glewInit();
 
 #ifdef _DEBUG
-    RegisterCallback();
+	RegisterCallback();
 #endif
 
-    int max_work_groups = -1;
-    glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &max_work_groups);
+	int max_work_groups = -1;
+	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &max_work_groups);
 
-    // Print out information about the OpenGL version supported by the graphics driver.	
-    std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
-    std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
-    std::cout << "Version: " << glGetString(GL_VERSION) << std::endl;
-    std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
-    std::cout << "Max work group invocations: " << max_work_groups << std::endl;
-   
-    glEnable(GL_DEPTH_TEST);
+	// Print out information about the OpenGL version supported by the graphics driver.	
+	std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
+	std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
+	std::cout << "Version: " << glGetString(GL_VERSION) << std::endl;
+	std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+	std::cout << "Max work group invocations: " << max_work_groups << std::endl;
 
-    glEnable(GL_POINT_SPRITE);
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+	glEnable(GL_DEPTH_TEST);
+
+	glEnable(GL_POINT_SPRITE);
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 	init_particles();
 
-    reload_shader();
-    reload_mesh();
+	reload_shader();
+	reload_mesh();
 
-    // get biggest texture size needed, so resize wont clip textures
-    int count;
-    GLFWmonitor** monitors = glfwGetMonitors(&count);
-    GLFWmonitor* primary = glfwGetPrimaryMonitor();
-    float max_x = 0.0f;
-    float max_y = 0.0f;
-    for (int m = 0; m < count; m++) {
-        
-        const GLFWvidmode* mode = glfwGetVideoMode(monitors[m]);
-        float xscale = mode->width;
-        float yscale = mode->height;
+	// get biggest texture size needed, so resize wont clip textures
+	int count;
+	GLFWmonitor** monitors = glfwGetMonitors(&count);
+	GLFWmonitor* primary = glfwGetPrimaryMonitor();
+	float max_x = 0.0f;
+	float max_y = 0.0f;
+	for (int m = 0; m < count; m++) {
 
-        if ((xscale * yscale) > (max_x * max_y)) {
-            // maintain aspect ratio
-            max_x = xscale;
-            max_y = yscale;
-        }
-    }
-    
-    // Create a texture object and set initial wrapping and filtering state
-    // R: BW value, G: depth value, B: alpha channel
-    glGenTextures(1, &fbo_tex);
-    glBindTexture(GL_TEXTURE_2D, fbo_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, max_x, max_y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
+		const GLFWvidmode* mode = glfwGetVideoMode(monitors[m]);
+		float xscale = mode->width;
+		float yscale = mode->height;
 
-    // Create the framebuffer object
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		if ((xscale * yscale) > (max_x * max_y)) {
+			// maintain aspect ratio
+			max_x = xscale;
+			max_y = yscale;
+		}
+	}
 
-    // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
-    // The depth buffer
-    glGenRenderbuffers(1, &depthrenderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, max_x, max_y);
+	// Create a texture object and set initial wrapping and filtering state
+	// R: BW value, G: depth value, B: alpha channel
+	glGenTextures(1, &fbo_tex);
+	glBindTexture(GL_TEXTURE_2D, fbo_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, max_x, max_y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
-    // bind fbo texture to render to 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_tex, 0);
+	// Create the framebuffer object
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    // attach depth renderbuffer to FBO
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+	// http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
+	// The depth buffer
+	glGenRenderbuffers(1, &depthrenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, max_x, max_y);
 
-    // unbind the fbo
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// bind fbo texture to render to 
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_tex, 0);
 
-    // Create and initialize uniform buffers
+	// attach depth renderbuffer to FBO
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 
-    // For SceneUniforms
-    glGenBuffers(1, &scene_ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo);
-    // Allocate memory for the buffer, but don't copy (since pointer is null).
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(SceneUniforms), nullptr, GL_STREAM_DRAW); 
-    // Associate this uniform buffer with the uniform block in the shader that has the same binding.
-    glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::scene, scene_ubo); 
+	// unbind the fbo
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // For ConstantsUniform
-    glGenBuffers(1, &constants_ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantsUniform), nullptr, GL_STREAM_DRAW); 
-    glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::constants, constants_ubo); 
+	// Create and initialize uniform buffers
 
-    // boundary ubo
-    glGenBuffers(1, &boundary_ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, boundary_ubo);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(BoundaryUniform), nullptr, GL_STREAM_DRAW); 
-    glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::boundary, boundary_ubo); 
+	// For SceneUniforms
+	glGenBuffers(1, &scene_ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo);
+	// Allocate memory for the buffer, but don't copy (since pointer is null).
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(SceneUniforms), nullptr, GL_STREAM_DRAW);
+	// Associate this uniform buffer with the uniform block in the shader that has the same binding.
+	glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::scene, scene_ubo);
 
-    // for MaterialUniforms
-    glGenBuffers(1, &material_ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, material_ubo);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(MaterialUniforms), &MaterialData, GL_STREAM_DRAW); 
-    glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::material, material_ubo); 
+	// For ConstantsUniform
+	glGenBuffers(1, &constants_ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantsUniform), nullptr, GL_STREAM_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::constants, constants_ubo);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	// boundary ubo
+	glGenBuffers(1, &boundary_ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, boundary_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(BoundaryUniform), nullptr, GL_STREAM_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::boundary, boundary_ubo);
+
+	// for MaterialUniforms
+	glGenBuffers(1, &material_ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, material_ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(MaterialUniforms), &MaterialData, GL_STREAM_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, UboBinding::material, material_ubo);
+
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 // C++ programs start executing in the main() function.
 int main(int argc, char** argv)
 {
-    GLFWwindow* window;
+	GLFWwindow* window;
 
-    /* Initialize the library */
-    if (!glfwInit())
-    {
-        return -1;
-    }
+	/* Initialize the library */
+	if (!glfwInit())
+	{
+		return -1;
+	}
 
 #ifdef _DEBUG
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif
 
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(init_window_width, init_window_height, window_title, NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
+	/* Create a windowed mode window and its OpenGL context */
+	window = glfwCreateWindow(init_window_width, init_window_height, window_title, NULL, NULL);
+	if (!window)
+	{
+		glfwTerminate();
+		return -1;
+	}
 
-    // Register callback functions with glfw. 
-    glfwSetKeyCallback(window, keyboard);
-    glfwSetFramebufferSizeCallback(window, resize);
+	// Register callback functions with glfw. 
+	glfwSetKeyCallback(window, keyboard);
+	glfwSetFramebufferSizeCallback(window, resize);
 
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
+	/* Make the window's context current */
+	glfwMakeContextCurrent(window);
 
-    initOpenGL();
+	initOpenGL();
 
-    // Init ImGui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 150");
+	// Init ImGui
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 150");
 
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        idle();
-        if (mesh_id != display_mesh) {
-            // reload if selected mesh is different from mesh being displayed
-            reload_mesh();
-        }
-        display(window);
+	/* Loop until the user closes the window */
+	while (!glfwWindowShouldClose(window))
+	{
+		idle();
+		if (mesh_id != display_mesh) {
+			// reload if selected mesh is different from mesh being displayed
+			reload_mesh();
+		}
+		display(window);
 
-        /* Poll for and process events */
-        glfwPollEvents();
-    }
+		/* Poll for and process events */
+		glfwPollEvents();
+	}
 
-    // Cleanup ImGui
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+	// Cleanup ImGui
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
-    glfwTerminate();
-    return 0;
+	glfwTerminate();
+	return 0;
 }

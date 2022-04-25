@@ -288,10 +288,9 @@ void display(GLFWwindow* window)
 
     // Use compute shader
     if (obj_mode == 1) {
+        glBindVertexArray(particle_position_vao);
         if (simulate)
         {
-            glBindVertexArray(particle_position_vao);
-
             glUseProgram(compute_programs[0]); // Use density and pressure calculation program
             glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);

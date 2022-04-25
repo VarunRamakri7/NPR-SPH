@@ -35,8 +35,8 @@
 #define WORK_GROUP_SIZE 1024
 #define NUM_WORK_GROUPS 10 // Ceiling of particle count divided by work group size
 
-const int init_window_width = 720;
-const int init_window_height = 720;
+const int init_window_width = 1400;
+const int init_window_height = 1400;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 // openGL
@@ -191,7 +191,7 @@ void draw_gui(GLFWwindow* window)
             finish_encoding(); // Uses ffmpeg
         }
     }
-    ImGui::Image((void*)fbo_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
+    // ImGui::Image((void*)fbo_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
 
     ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
     ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);

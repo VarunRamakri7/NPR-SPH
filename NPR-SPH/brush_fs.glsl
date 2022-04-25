@@ -59,8 +59,8 @@ void main(void)
     // lighter outline at the back
     vec3 fill = outline().rgb;
     vec3 outlines = vec3(1.0) - fill; // inverse of fill
-    vec3 line_color = desaturate(outline_color.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0, 0.8)) * outlines;
-    vec3 desat_fill = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0, 0.8)) * fill;
+    vec3 line_color = desaturate(outline_color.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0.0, 0.8)) * outlines;
+    vec3 desat_fill = desaturate(fragcolor.rgb, clamp(pow(length(vec3(eye_w) - inData.pw)/15, 4), 0.0, 0.8)) * fill;
   
     fragcolor = vec4(line_color + desat_fill, 1.0);
     fragcolor.a = texelFetch(fbo_tex, ivec2(gl_FragCoord), 0).b * inData.color;
@@ -154,7 +154,7 @@ vec4 outline() {
 
     // have minimum at 3, *5 for higher range
     // if not float then not smooth transition 
-    float d = 1.0 - clamp(pow(length(vec3(eye_w) - inData.pw)/4, 1), 0, 1.0); // inverse so higher number closer
+    float d = 1.0 - clamp(pow(length(vec3(eye_w) - inData.pw)/4, 1), 0.0, 1.0); // inverse so higher number closer
     // now turn 0-1 float to int (equally spaced if possible, but we don't know the range of d) unless we do the bounding box but that would be local 
 
     int linethickness = 5 + int(floor(d * 10));

@@ -152,235 +152,237 @@ namespace UniformLocs
     int sim_rad = 7; // particle radius 
 }
 
+void init_particles();
 
 void draw_gui(GLFWwindow* window)
 {
-    // Begin ImGui Frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+	// Begin ImGui Frame
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
 
 
-    // Draw Visualization Gui (NPR related)
-    ImGui::Begin("Visualization Window");
-    if (ImGui::Button("Quit"))
-    {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
+	// Draw Visualization Gui (NPR related)
+	ImGui::Begin("Visualization Window");
+	if (ImGui::Button("Quit"))
+	{
+		glfwSetWindowShouldClose(window, GLFW_TRUE);
+	}
 
-    const int filename_len = 256;
-    static char video_filename[filename_len] = "capture.mp4";
+	const int filename_len = 256;
+	static char video_filename[filename_len] = "capture.mp4";
 
-    ImGui::InputText("Video filename", video_filename, filename_len);
-    if (recording == false)
-    {
-        if (ImGui::Button("Start Recording"))
-        {
-            int w, h;
-            glfwGetFramebufferSize(window, &w, &h);
-            recording = true;
-            start_encoding(video_filename, w, h); // Uses ffmpeg
-        }
+	ImGui::InputText("Video filename", video_filename, filename_len);
+	if (recording == false)
+	{
+		if (ImGui::Button("Start Recording"))
+		{
+			int w, h;
+			glfwGetFramebufferSize(window, &w, &h);
+			recording = true;
+			start_encoding(video_filename, w, h); // Uses ffmpeg
+		}
 
-    }
-    else
-    {
-        if (ImGui::Button("Stop Recording"))
-        {
-            recording = false;
-            finish_encoding(); // Uses ffmpeg
-        }
-    }
-    // ImGui::Image((void*)fbo_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
+	}
+	else
+	{
+		if (ImGui::Button("Stop Recording"))
+		{
+			recording = false;
+			finish_encoding(); // Uses ffmpeg
+		}
+	}
+	// ImGui::Image((void*)fbo_tex, ImVec2(500.0f, 500.0f), ImVec2(0.0, 1.0), ImVec2(1.0, 0.0));
 
-    ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
-    ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);
-    ImGui::SliderFloat3("Camera Eye", &SceneData.eye_w[0], -100.0f, 100.0f);
-    ImGui::SliderFloat3("Camera Center", &center[0], -100.0f, 100.0f);
+	ImGui::SliderFloat("View angle", &angle, -glm::pi<float>(), +glm::pi<float>());
+	ImGui::SliderFloat("Scale", &scale, 0.0001f, 20.0f);
+	ImGui::SliderFloat3("Camera Eye", &SceneData.eye_w[0], -100.0f, 100.0f);
+	ImGui::SliderFloat3("Camera Center", &center[0], -100.0f, 100.0f);
 
-    ImGui::SliderFloat3("Light position", &SceneData.light_w.x, -10.0f, 10.0f);
+	ImGui::SliderFloat3("Light position", &SceneData.light_w.x, -10.0f, 10.0f);
 
-    ImGui::RadioButton("ToonShader", &style, render_style::toon);
-    ImGui::SameLine();
-    ImGui::RadioButton("Paint", &style, render_style::paint);
+	ImGui::RadioButton("ToonShader", &style, render_style::toon);
+	ImGui::SameLine();
+	ImGui::RadioButton("Paint", &style, render_style::paint);
 
-    ImGui::ColorEdit3("BG Color", &clear_color.r, 0);
+	ImGui::ColorEdit3("BG Color", &clear_color.r, 0);
 
-    // Control Material colors
-    ImGui::ColorEdit3("Outline Color", &MaterialData.outline.r, 0);
-    ImGui::ColorEdit3("Toon Darkest Color", &MaterialData.dark.r, 0);
-    ImGui::ColorEdit3("Toon Midtone Color", &MaterialData.midtone.r, 0);
-    ImGui::ColorEdit3("Toon Highlight Color", &MaterialData.highlight.r, 0);
-    ImGui::SliderFloat("Specular", &MaterialData.shininess, 0.0f, 1.0f);
+	// Control Material colors
+	ImGui::ColorEdit3("Outline Color", &MaterialData.outline.r, 0);
+	ImGui::ColorEdit3("Toon Darkest Color", &MaterialData.dark.r, 0);
+	ImGui::ColorEdit3("Toon Midtone Color", &MaterialData.midtone.r, 0);
+	ImGui::ColorEdit3("Toon Highlight Color", &MaterialData.highlight.r, 0);
+	ImGui::SliderFloat("Specular", &MaterialData.shininess, 0.0f, 1.0f);
 
-    if (style == render_style::paint) {
-        // add paint options
-        ImGui::SliderFloat("Brush Size", &MaterialData.brush_scale, 0.0001f, 2.0f);
-    }
+	if (style == render_style::paint) {
+		// add paint options
+		ImGui::SliderFloat("Brush Size", &MaterialData.brush_scale, 0.0001f, 2.0f);
+	}
 
-    ImGui::RadioButton("Mesh", &obj_mode, 0);
-    ImGui::SameLine();
-    ImGui::RadioButton("Simulate", &obj_mode, 1);
+	ImGui::RadioButton("Mesh", &obj_mode, 0);
+	ImGui::SameLine();
+	ImGui::RadioButton("Simulate", &obj_mode, 1);
 
-    if (obj_mode == 1) {
-        // add simulation options 
-        ImGui::SliderFloat("Particle Size", &simulation_radius, 10.0f, 100.0f);
-    }
-    else {
-        // add mesh options
-        ImGui::RadioButton("Purdue", &mesh_id, 0);
-        ImGui::RadioButton("Landscape", &mesh_id, 1);
-        ImGui::RadioButton("Knot", &mesh_id, 2);
-    }
+	if (obj_mode == 1) {
+		// add simulation options 
+		ImGui::SliderFloat("Particle Size", &simulation_radius, 10.0f, 100.0f);
+	}
+	else {
+		// add mesh options
+		ImGui::RadioButton("Purdue", &mesh_id, 0);
+		ImGui::RadioButton("Landscape", &mesh_id, 1);
+		ImGui::RadioButton("Knot", &mesh_id, 2);
+	}
 
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::End();
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+	ImGui::End();
 
 
-    // Draw Simulation Gui (SPH related)
-    ImGui::Begin("Constants Window");
-    ImGui::SliderFloat("Mass", &ConstantsData.mass, 0.01f, 0.1f);
-    ImGui::SliderFloat("Smoothing", &ConstantsData.smoothing_coeff, 7.0f, 10.0f);
-    ImGui::SliderFloat("Viscosity", &ConstantsData.visc, 1000.0f, 5000.0f);
-    ImGui::SliderFloat("Resting Density", &ConstantsData.resting_rho, 1000.0f, 5000.0f);
-    ImGui::End();
+	// Draw Simulation Gui (SPH related)
+	ImGui::Begin("Constants Window");
+	ImGui::SliderFloat("Mass", &ConstantsData.mass, 0.01f, 0.1f);
+	ImGui::SliderFloat("Smoothing", &ConstantsData.smoothing_coeff, 7.0f, 10.0f);
+	ImGui::SliderFloat("Viscosity", &ConstantsData.visc, 1000.0f, 5000.0f);
+	ImGui::SliderFloat("Resting Density", &ConstantsData.resting_rho, 1000.0f, 5000.0f);
+	ImGui::End();
 
-    // End ImGui Frame
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	// End ImGui Frame
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void sendUniforms() {
-    // sends the uniform to current active shader program
+	// sends the uniform to current active shader program
 
-    glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(scale * mesh_data.mScaleFactor));
-    glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w.x, SceneData.eye_w.y, SceneData.eye_w.z), center, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 P = glm::perspective(glm::pi<float>() / 4.0f, aspect, 0.1f, 100.0f);
-    SceneData.P = P;
-    SceneData.V = V;
+	glm::mat4 M = glm::rotate(angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(scale * mesh_data.mScaleFactor));
+	glm::mat4 V = glm::lookAt(glm::vec3(SceneData.eye_w.x, SceneData.eye_w.y, SceneData.eye_w.z), center, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 P = glm::perspective(glm::pi<float>() / 4.0f, aspect, 0.1f, 100.0f);
+	SceneData.P = P;
+	SceneData.V = V;
 
-    glUniformMatrix4fv(UniformLocs::M, 1, false, glm::value_ptr(M));
-    glUniform1i(UniformLocs::style, style);
-    glUniform1i(UniformLocs::mode, obj_mode);
-    glUniform1f(UniformLocs::mesh_d, mesh_d);
-    glUniform1f(UniformLocs::mesh_range, mesh_range);
-    glUniform1f(UniformLocs::scale, scale);
-    glUniform1f(UniformLocs::sim_rad, simulation_radius);
+	glUniformMatrix4fv(UniformLocs::M, 1, false, glm::value_ptr(M));
+	glUniform1i(UniformLocs::style, style);
+	glUniform1i(UniformLocs::mode, obj_mode);
+	glUniform1f(UniformLocs::mesh_d, mesh_d);
+	glUniform1f(UniformLocs::mesh_range, mesh_range);
+	glUniform1f(UniformLocs::scale, scale);
+	glUniform1f(UniformLocs::sim_rad, simulation_radius);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo); //Bind the OpenGL UBO before we update the data.
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SceneData), &SceneData); //Upload the new uniform values.
+	glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo); //Bind the OpenGL UBO before we update the data.
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SceneData), &SceneData); //Upload the new uniform values.
 
-    glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo); // Bind the OpenGL UBO before we update the data.
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ConstantsData), &ConstantsData); // Upload the new uniform values.
+	glBindBuffer(GL_UNIFORM_BUFFER, constants_ubo); // Bind the OpenGL UBO before we update the data.
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ConstantsData), &ConstantsData); // Upload the new uniform values.
 
-    glBindBuffer(GL_UNIFORM_BUFFER, boundary_ubo); // Bind the OpenGL UBO before we update the data.
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(BoundaryUniform), &BoundaryData); // Upload the new uniform values.
+	glBindBuffer(GL_UNIFORM_BUFFER, boundary_ubo); // Bind the OpenGL UBO before we update the data.
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(BoundaryUniform), &BoundaryData); // Upload the new uniform values.
 
-    glBindBuffer(GL_UNIFORM_BUFFER, material_ubo); //Bind the OpenGL UBO before we update the data.
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MaterialUniforms), &MaterialData); //Upload the new uniform values.
+	glBindBuffer(GL_UNIFORM_BUFFER, material_ubo); //Bind the OpenGL UBO before we update the data.
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MaterialUniforms), &MaterialData); //Upload the new uniform values.
 }
  
 // This function gets called every time the scene gets redisplayed
 void display(GLFWwindow* window)
 {
-    // Clear the screen to the color previously specified in the glClearColor(...) call.
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// Clear the screen to the color previously specified in the glClearColor(...) call.
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Use compute shader
-    if (obj_mode == 1) {
-        glBindVertexArray(particle_position_vao);
-        if (simulate)
-        {
-            glUseProgram(compute_programs[0]); // Use density and pressure calculation program
-            glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-            glUseProgram(compute_programs[1]); // Use force calculation program
-            glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-            glUseProgram(compute_programs[2]); // Use integration calculation program
-            glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-        }
-    } else {
-        // npr on mesh
-        glBindVertexArray(mesh_data.mVao);
-    }
+	// Use compute shader
+	if (obj_mode == 1) {
+		glBindVertexArray(particle_position_vao);
+		if (simulate)
+		{
+			glUseProgram(compute_programs[0]); // Use density and pressure calculation program
+			glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+			glUseProgram(compute_programs[1]); // Use force calculation program
+			glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+			glUseProgram(compute_programs[2]); // Use integration calculation program
+			glDispatchCompute(NUM_WORK_GROUPS, 1, 1);
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+		}
+	}
+	else {
+		// npr on mesh
+		glBindVertexArray(mesh_data.mVao);
+	}
 
-    // toon shader
-    glUseProgram(toon_shader_program);
-    // Set uniforms
-    sendUniforms();
+	// toon shader
+	glUseProgram(toon_shader_program);
+	// Set uniforms
+	sendUniforms();
 
-    // pass 0: render scene info needed for compositing into the texture: 
-    // bw image, depth value for contour edge detection, alpha
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glUniform1i(UniformLocs::pass, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
-    glBindTextureUnit(0, fbo_tex);
-    glDrawBuffer(GL_COLOR_ATTACHMENT0); 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // draw mesh or particles
-    if (obj_mode == 1)
-    {
-        glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
-    }
-    else {
-        glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// pass 0: render scene info needed for compositing into the texture: 
+	// bw image, depth value for contour edge detection, alpha
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glUniform1i(UniformLocs::pass, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Render to FBO.
+	glBindTextureUnit(0, fbo_tex);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// draw mesh or particles
+	if (obj_mode == 1)
+	{
+		glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
+	}
+	else {
+		glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // pass 1: draw what we see on screen
-    glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glUniform1i(UniformLocs::pass, 1);
-    if (obj_mode == 1)
-    {
-        glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
-    }
-    else {
-        glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
-    }
+	// pass 1: draw what we see on screen
+	glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUniform1i(UniformLocs::pass, 1);
+	if (obj_mode == 1)
+	{
+		glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
+	}
+	else {
+		glDrawElements(GL_TRIANGLES, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+	}
 
-    if (style == render_style::paint) {
+	if (style == render_style::paint) {
 
-        // add brush strokes 
+		// add brush strokes 
 
-        // geometry_shader draw brush strokes
-        glUseProgram(brush_shader_program);
-        sendUniforms();
+		// geometry_shader draw brush strokes
+		glUseProgram(brush_shader_program);
+		sendUniforms();
 
-        // enable alpha blending and disable depth 
-        glEnable(GL_BLEND);
-        glDepthMask(GL_FALSE);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if (obj_mode == 1)
-        {
-            glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
-        }
-        else {
-            glDrawElements(GL_POINTS, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
-        }
-        glDisable(GL_BLEND);
-        glDepthMask(GL_TRUE);
-        // unbind
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-    
-    // grab frame before gui draws
-    if (recording == true)
-    {
-        glFinish();
-        glReadBuffer(GL_BACK);
-        int w, h;
-        glfwGetFramebufferSize(window, &w, &h);
-        read_frame_to_encode(&rgb, &pixels, w, h);
-        encode_frame(rgb);
-    }
+		// enable alpha blending and disable depth 
+		glEnable(GL_BLEND);
+		glDepthMask(GL_FALSE);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		if (obj_mode == 1)
+		{
+			glDrawArrays(GL_POINTS, 0, NUM_PARTICLES);
+		}
+		else {
+			glDrawElements(GL_POINTS, mesh_data.mSubmesh[0].mNumIndices, GL_UNSIGNED_INT, 0);
+		}
+		glDisable(GL_BLEND);
+		glDepthMask(GL_TRUE);
+		// unbind
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
 
-    draw_gui(window);
+	// grab frame before gui draws
+	if (recording == true)
+	{
+		glFinish();
+		glReadBuffer(GL_BACK);
+		int w, h;
+		glfwGetFramebufferSize(window, &w, &h);
+		read_frame_to_encode(&rgb, &pixels, w, h);
+		encode_frame(rgb);
+	}
 
-    /* Swap front and back buffers */
-    glfwSwapBuffers(window);
+	draw_gui(window);
+
+	/* Swap front and back buffers */
+	glfwSwapBuffers(window);
 }
 
 void idle()
@@ -389,38 +391,38 @@ void idle()
     time_sec += 1.0f / 60.0f;
 }
 
-void prepare_shader(GLuint* shader_name, const char* vShaderFile, const char* gShaderFile, const char* fShaderFile) {
-    GLuint new_shader = gShaderFile != NULL ? InitShader(vShaderFile, gShaderFile, fShaderFile) : InitShader(vShaderFile, fShaderFile);
+void prepare_shader(GLuint* shader_name, const char* vShaderFile, const char* gShaderFile, const char* fShaderFile)
+{
+	GLuint new_shader = gShaderFile != NULL ? InitShader(vShaderFile, gShaderFile, fShaderFile) : InitShader(vShaderFile, fShaderFile);
 
-    if (new_shader == -1) // loading failed
-    {
-        glClearColor(1.0f, 0.0f, 1.0f, 0.0f); //change clear color if shader can't be compiled
-    }
-    else
-    {
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+	if (new_shader == -1) // loading failed
+	{
+		glClearColor(1.0f, 0.0f, 1.0f, 0.0f); //change clear color if shader can't be compiled
+	}
+	else
+	{
+		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
-        if (*shader_name != -1)
-        {
-            glDeleteProgram(*shader_name);
-        }
-        *shader_name = new_shader;
-    }
-
+		if (*shader_name != -1)
+		{
+			glDeleteProgram(*shader_name);
+		}
+		*shader_name = new_shader;
+	}
 }
 
-void reload_mesh() {
+void reload_mesh()
+{
+	mesh_data = LoadMesh(mesh_options[mesh_id]);
+	glBindVertexArray(0); // Unbind VAO
 
-    mesh_data = LoadMesh(mesh_options[mesh_id]);
-    glBindVertexArray(0); // Unbind VAO
+	// get mesh depth range from bounding box to compute normalized fading factor
+	mesh_d = -mesh_data.mBbMin.z;
+	// add mesh_d to vertex to offset everything to 0 and divide all by abs(min-max) 
+	mesh_range = glm::abs(mesh_data.mBbMin.z - mesh_data.mBbMax.z);
 
-    // get mesh depth range from bounding box to compute normalized fading factor
-    mesh_d = -mesh_data.mBbMin.z;
-    // add mesh_d to vertex to offset everything to 0 and divide all by abs(min-max) 
-    mesh_range = glm::abs(mesh_data.mBbMin.z - mesh_data.mBbMax.z);
-
-    // set which mesh is being displayed
-    display_mesh = mesh_id;
+	// set which mesh is being displayed
+	display_mesh = mesh_id;
 }
 
 void reload_shader()
@@ -458,6 +460,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
         case 'r':
         case 'R':
             reload_shader();
+			init_particles();
             break;
 
         case 'p':
@@ -501,6 +504,40 @@ std::vector<glm::vec4> make_grid()
     return positions;
 }
 
+/// <summary>
+/// Initialize the SSBO with a cube of particles
+/// </summary>
+void init_particles()
+{
+	// Initialize particle data
+	std::vector<Particle> particles(NUM_PARTICLES);
+	std::vector<glm::vec4> grid_positions = make_grid(); // Get grid positions
+	for (int i = 0; i < NUM_PARTICLES; i++)
+	{
+		particles[i].pos = grid_positions[i];
+		particles[i].vel = glm::vec4(0.0f);
+		particles[i].force = glm::vec4(0.0f);
+		particles[i].extras = glm::vec4(0.0f); // 0 - rho, 1 - pressure, 2 - age
+	}
+
+	// Generate and bind shader storage buffer
+	glGenBuffers(1, &particles_ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * NUM_PARTICLES, particles.data(), GL_STREAM_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_ssbo);
+
+	// Generate and bind VAO for particle positions
+	glGenVertexArrays(1, &particle_position_vao);
+	glBindVertexArray(particle_position_vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, particles_ssbo);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), nullptr); // Bind buffer containing particle positions to VAO
+	glEnableVertexAttribArray(0); // Enable attribute with location = 0 (vertex position) for VAO
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind SSBO
+	glBindVertexArray(0); // Unbind VAO
+}
+
 #define BUFFER_OFFSET( offset )   ((GLvoid*) (offset))
 
 // Initialize OpenGL state. This function only gets called once.
@@ -527,33 +564,7 @@ void initOpenGL()
     glEnable(GL_POINT_SPRITE);
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-    // Initialize particle data
-    std::vector<Particle> particles(NUM_PARTICLES);
-    std::vector<glm::vec4> grid_positions = make_grid(); // Get grid positions
-    for (int i = 0; i < NUM_PARTICLES; i++)
-    {
-        particles[i].pos = grid_positions[i];
-        particles[i].vel = glm::vec4(0.0f); // Constant velocity along Y-Axis
-        particles[i].force = glm::vec4(0.0f); // Gravity along the Y-Axis
-        particles[i].extras = glm::vec4(0.0f); // 0 - rho, 1 - pressure, 2 - age
-    }
-
-    // Generate and bind shader storage buffer
-    glGenBuffers(1, &particles_ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, particles_ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * NUM_PARTICLES, particles.data(), GL_STREAM_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_ssbo);
-
-    // Generate and bind VAO for particle positions
-    glGenVertexArrays(1, &particle_position_vao);
-    glBindVertexArray(particle_position_vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, particles_ssbo);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), nullptr); // Bind buffer containing particle positions to VAO
-    glEnableVertexAttribArray(0); // Enable attribute with location = 0 (vertex position) for VAO
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind SSBO
-    glBindVertexArray(0); // Unbind VAO
+	init_particles();
 
     reload_shader();
     reload_mesh();

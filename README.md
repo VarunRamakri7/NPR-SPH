@@ -12,7 +12,7 @@ Functions:
 
 Implementation:
 
-    - Edge detection with Sobel Operator. 
+    - Edge detection with Sobel Operator on the fragment depth value to get inner and outer contours. 
     
     - Brush strokes geometry added with geometry shader. 
 

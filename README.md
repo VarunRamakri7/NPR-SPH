@@ -4,6 +4,8 @@ A project to showcase non-photorealistic rendering and smoothed-particle hydrody
 
 **The non-photorealistic shaders:**
 
+https://github.com/VarunRamakri7/NPR-SPH/blob/main/demo.mp4
+
 Functions:
 
     - User can select outline color, background color, dark tone, mid tone and highlights.

@@ -1,6 +1,8 @@
 # NPR-SPH
 A project to showcase non-photorealistic rendering and smoothed-particle hydrodynamics.
 
+https://github.com/VarunRamakri7/NPR-SPH/blob/angel/demo.mp4
+
 
 **The non-photorealistic shaders:**
 

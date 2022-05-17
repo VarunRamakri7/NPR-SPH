@@ -4,7 +4,7 @@ A project to showcase non-photorealistic rendering and smoothed-particle hydrody
 
 Full project demo: https://github.com/VarunRamakri7/NPR-SPH/blob/main/demo.mp4
 
-### NPR
+## NPR
 Functions:
 
     - User can select outline color, background color, dark tone, mid tone and highlights.
@@ -43,7 +43,7 @@ Strokes and outlines that are further away from the eye will be more desaturated
 
 ![paint_example1](paint_example1.PNG)
 
-### SPH
+## SPH
 
 Current SPH simulation (with 8000 particles) looks like:
 ![SPH demo](sph-demo.gif)

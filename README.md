@@ -46,13 +46,14 @@ Strokes and outlines that are further away from the eye will be more desaturated
 ## SPH
 
 Current SPH simulation (with 8000 particles) looks like:
+
 ![SPH demo](sph-demo.gif)
 
 Interactivity:
-    - Press 'p' to pause/unpause the simulation.
-    - Press 'r' to reset particle positions.
+- Press 'p' to pause/unpause the simulation.
+- Press 'r' to reset particle positions.
 
 Future Work:
-    - Increase number of particles.
-    - Optimize neighbourhood search.
-    - Add objects for particles to collide with.
+- Increase number of particles.
+- Optimize neighbourhood search.
+- Add objects for particles to collide with.

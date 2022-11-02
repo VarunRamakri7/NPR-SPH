@@ -45,7 +45,7 @@ Strokes and outlines that are further away from the eye will be more desaturated
 
 ## SPH
 
-Current SPH simulation (with 8000 particles) looks like:
+Current SPH simulation (with 10000 particles at 60 FPS) looks like:
 
 ![SPH demo](sph-demo.gif)
 

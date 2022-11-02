@@ -30,13 +30,13 @@
 #include "LoadMesh.h"      // Functions for loading meshes
 
 // particle setups
-#define NUM_PARTICLES 8000
+#define NUM_PARTICLES 10000
 #define PARTICLE_RADIUS 0.005f
 #define WORK_GROUP_SIZE 1024
 #define NUM_WORK_GROUPS 10 // Ceiling of particle count divided by work group size
 
-const int init_window_width = 1400;
-const int init_window_height = 1400;
+const int init_window_width = 720;
+const int init_window_height = 720;
 const char* const window_title = "CGT 521 Final Project - NPR-SPH";
 
 // openGL
@@ -111,14 +111,14 @@ struct ConstantsUniform
 {
 	float mass = 0.02f; // Particle Mass
 	float smoothing_coeff = 4.0f; // Smoothing length coefficient for neighborhood
-	float visc = 2000.0f; // Fluid viscosity
+	float visc = 3000.0f; // Fluid viscosity
 	float resting_rho = 1000.0f; // Resting density
 }ConstantsData;
 
 struct BoundaryUniform
 {
-	glm::vec4 upper = glm::vec4(0.25f, 1.0f, 0.25f, 0.0f);
-	glm::vec4 lower = glm::vec4(-0.25f, -0.5f, -0.25f, 0.0f);
+	glm::vec4 upper = glm::vec4(0.5f, 1.0f, 0.5f, 1.0f);
+	glm::vec4 lower = glm::vec4(-0.1f, -0.35f, -0.1f, 1.0f);
 }BoundaryData;
 
 struct MaterialUniforms
@@ -265,7 +265,7 @@ void sendUniforms() {
 	glUniform1i(UniformLocs::mode, obj_mode);
 	glUniform1f(UniformLocs::mesh_d, mesh_d);
 	glUniform1f(UniformLocs::mesh_range, mesh_range);
-	glUniform1f(UniformLocs::scale, scale);
+	//glUniform1f(UniformLocs::scale, scale);
 	glUniform1f(UniformLocs::sim_rad, simulation_radius);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, scene_ubo); //Bind the OpenGL UBO before we update the data.
@@ -490,11 +490,11 @@ std::vector<glm::vec4> make_grid()
 	std::vector<glm::vec4> positions;
 
 	// 20x20x20 Cube of particles within [0, 0.095] on all axes
-	for (int i = 0; i < 20; i++)
+	for (int i = 0; i < 10; i++)
 	{
-		for (int j = 0; j < 20; j++)
+		for (int j = 0; j < 100; j++)
 		{
-			for (int k = 0; k < 20; k++)
+			for (int k = 0; k < 10; k++)
 			{
 				positions.push_back(glm::vec4((float)i * PARTICLE_RADIUS, (float)j * PARTICLE_RADIUS, (float)k * PARTICLE_RADIUS, 1.0f));
 			}
